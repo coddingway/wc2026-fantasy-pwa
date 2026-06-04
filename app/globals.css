@@ -1,9 +1,16 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0f172a;
+  --foreground: #f1f5f9;
 }
+
+* { -webkit-tap-highlight-color: transparent; }
+html { scroll-behavior: smooth; }
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+input[type=range] { -webkit-appearance: none; height: 4px; border-radius: 2px; background: #334155; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #10b981; cursor: pointer; }
 
 @theme inline {
   --color-background: var(--background);
