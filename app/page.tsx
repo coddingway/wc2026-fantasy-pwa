@@ -2,6 +2,7 @@
 import { useFantasyStore } from "@/lib/store";
 import { Trophy, Globe, Zap, Calendar } from "lucide-react";
 import Link from "next/link";
+import FixtureTicker from "@/components/ui/FixtureTicker";
 
 const TRANSFER_WINDOWS = [
   { date: "Jun 17", label: "MD2 Window", transfers: "2 free" },
@@ -13,18 +14,24 @@ const TRANSFER_WINDOWS = [
 ];
 
 const QUICK_LINKS = [
-  { href: "/squad",       icon: "🏟️", label: "Squad",       desc: "Pitch view" },
-  { href: "/captain",     icon: "🎖️", label: "Captain",     desc: "Pick wisely" },
-  { href: "/transfers",   icon: "🔄", label: "Transfers",   desc: "Plan moves" },
-  { href: "/analytics",   icon: "📊", label: "Analytics",   desc: "Deep stats" },
-  { href: "/live",        icon: "⚡", label: "Live Mode",   desc: "Match day" },
-  { href: "/ai",          icon: "🧠", label: "AI Tools",    desc: "Smart picks" },
-  { href: "/community",   icon: "🌍", label: "Community",   desc: "Leagues" },
-  { href: "/tools",       icon: "🔧", label: "Power Tools", desc: "Advanced" },
-  { href: "/education",   icon: "🎓", label: "Learn",       desc: "Fantasy school" },
-  { href: "/predictions", icon: "🎯", label: "Predict",     desc: "Score games" },
-  { href: "/badges",      icon: "🏅", label: "Badges",      desc: "Achievements" },
-  { href: "/content",     icon: "📸", label: "Content",     desc: "Share & create" },
+  { href: "/squad",       icon: "🏟️", label: "Squad",        desc: "Pitch view" },
+  { href: "/captain",     icon: "🎖️", label: "Captain",      desc: "Pick wisely" },
+  { href: "/transfers",   icon: "🔄", label: "Transfers",    desc: "Plan moves" },
+  { href: "/analytics",   icon: "📊", label: "Analytics",    desc: "Deep stats" },
+  { href: "/live",        icon: "⚡", label: "Live Mode",    desc: "Match day" },
+  { href: "/ai",          icon: "🧠", label: "AI Tools",     desc: "Smart picks" },
+  { href: "/formation",   icon: "⚙️", label: "Formation",    desc: "Optimizer" },
+  { href: "/autobuilder", icon: "🪄", label: "Auto Build",   desc: "AI squad" },
+  { href: "/players",     icon: "💎", label: "Players",      desc: "Deep dive" },
+  { href: "/multiteam",   icon: "📋", label: "Multi Team",   desc: "A/B squads" },
+  { href: "/community",   icon: "🌍", label: "Community",    desc: "Leagues" },
+  { href: "/leagues",     icon: "🏆", label: "Leagues",      desc: "Join & create" },
+  { href: "/tools",       icon: "🔧", label: "Power Tools",  desc: "Full DB" },
+  { href: "/education",   icon: "🎓", label: "Learn",        desc: "Fantasy school" },
+  { href: "/predictions", icon: "🎯", label: "Predict",      desc: "Score games" },
+  { href: "/badges",      icon: "🏅", label: "Badges",       desc: "Achievements" },
+  { href: "/content",     icon: "📸", label: "Content",      desc: "Share & create" },
+  { href: "/notifications",icon: "🔔", label: "Alerts",      desc: "Notifications" },
 ];
 
 export default function Dashboard() {
@@ -36,6 +43,8 @@ export default function Dashboard() {
 
   return (
     <div className="px-4 py-4 space-y-5 max-w-lg mx-auto">
+      {/* Fixture Ticker */}
+      <FixtureTicker />
       {/* Hero Stats */}
       <div className="grid grid-cols-2 gap-3">
         {[
