@@ -7,7 +7,6 @@ import { Phone, LogOut, Cloud } from "lucide-react";
 
 export default function LoginPage() {
   const { phone, login, signOut } = useAuth();
-  const favoriteTeam = useFantasyStore((s) => s.favoriteTeam);
   const ownerName = useFantasyStore((s) => s.ownerName);
   const setOwnerName = useFantasyStore((s) => s.setOwnerName);
   const router = useRouter();
@@ -30,7 +29,9 @@ export default function LoginPage() {
       return;
     }
     setOwnerName(name.trim());
-    router.push(favoriteTeam ? "/" : "/team-select");
+    // Go home — the gate will route to team-select only if the cloud
+    // confirms this number has no favourite team yet.
+    router.push("/");
   };
 
   if (phone) {

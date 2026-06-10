@@ -25,10 +25,11 @@ export default function CloudSync() {
   const loaded = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // On login: cloud-first load
+  // On login: cloud-first load. Gates wait for cloudLoaded before routing.
   useEffect(() => {
     loaded.current = false;
     if (!phone) return;
+    useFantasyStore.setState({ cloudLoaded: false });
     const url = `/api/user/${encodeURIComponent(phone)}`;
     fetch(url)
       .then((r) => r.json())
@@ -53,8 +54,12 @@ export default function CloudSync() {
           }
         }
         loaded.current = true;
+        useFantasyStore.setState({ cloudLoaded: true });
       })
-      .catch(() => { loaded.current = true; }); // offline → stay local
+      .catch(() => {
+        loaded.current = true;
+        useFantasyStore.setState({ cloudLoaded: true }); // offline → stay local
+      });
   }, [phone]);
 
   // Every change → debounced cloud write
