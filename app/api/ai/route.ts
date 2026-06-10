@@ -67,9 +67,10 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ configured: true, advice });
   } catch (e) {
-    return NextResponse.json(
-      { configured: true, error: "AI request failed. Try again in a minute." },
-      { status: 500 }
-    );
+    const msg = e instanceof Error ? e.message : "unknown";
+    const friendly = msg.includes("credit balance")
+      ? "The AI account needs credits — top up at console.anthropic.com → Plans & Billing."
+      : `AI request failed: ${msg.slice(0, 160)}`;
+    return NextResponse.json({ configured: true, error: friendly }, { status: 500 });
   }
 }
