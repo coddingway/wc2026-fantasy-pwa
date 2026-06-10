@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, Users, RefreshCw, BarChart2, Zap, MoreHorizontal } from "lucide-react";
+import { useAuth } from "@/lib/auth-context";
 
 const nav = [
   { href: "/", icon: Home, label: "Home" },
@@ -14,7 +15,10 @@ const nav = [
 
 export default function BottomNav() {
   const path = usePathname();
-  if (path === "/login") return null; // no navbar on the signup/login screen
+  const { phone } = useAuth();
+  // Hide only for logged-OUT visitors on the auth screen.
+  // Logged-in users on /login see the account screen WITH the navbar.
+  if (path === "/login" && !phone) return null;
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur border-t border-slate-800 h-20 flex items-center">
       {nav.map(({ href, icon: Icon, label }) => {
