@@ -3,6 +3,8 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import BottomNav from "@/components/layout/BottomNav";
 import TopBar from "@/components/layout/TopBar";
+import { AuthProvider } from "@/lib/auth-context";
+import CloudSync from "@/components/auth/CloudSync";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -36,9 +38,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className="dark">
       <body className={`${inter.className} bg-slate-950 text-white min-h-screen`}>
-        <TopBar />
-        <main className="pb-20 pt-16 min-h-screen">{children}</main>
-        <BottomNav />
+        <AuthProvider>
+          <CloudSync />
+          <TopBar />
+          <main className="pb-20 pt-16 min-h-screen">{children}</main>
+          <BottomNav />
+        </AuthProvider>
       </body>
     </html>
   );
