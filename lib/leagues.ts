@@ -1,7 +1,4 @@
-import {
-  collection, doc, getDoc, getDocs, setDoc, query, where, serverTimestamp,
-} from "firebase/firestore";
-import { db } from "./firebase";
+// Crew leagues — thin client over our Vercel API routes (Neon Postgres).
 
 export interface LeagueDoc {
   id: string;
@@ -19,77 +16,45 @@ export interface MemberDoc {
   points: number;
 }
 
-function genCode(name: string) {
-  const base = name.replace(/[^a-zA-Z]/g, "").toUpperCase().slice(0, 6) || "LEAGUE";
-  return base + Math.floor(100 + Math.random() * 900);
+type Member = { teamName: string; favoriteTeam: string | null; points: number };
+
+async function post(body: Record<string, unknown>) {
+  const res = await fetch("/api/leagues", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error ?? "Request failed");
+  if (data.configured === false) throw new Error("Cloud database not connected yet (see SETUP_KEYS.md)");
+  return data;
 }
 
 export async function createLeague(
-  phone: string, name: string, type: "public" | "private",
-  member: { teamName: string; favoriteTeam: string | null; points: number }
+  phone: string, name: string, type: "public" | "private", member: Member
 ): Promise<LeagueDoc> {
-  if (!db) throw new Error("Cloud not configured");
-  const code = genCode(name);
-  const ref = doc(collection(db, "leagues"));
-  const league: LeagueDoc = { id: ref.id, name, code, type, ownerUid: phone, ownerName: member.teamName };
-  await setDoc(ref, { ...league, createdAt: serverTimestamp() });
-  await setDoc(doc(db, "leagues", ref.id, "members", phone), { uid: phone, ...member, joinedAt: serverTimestamp() });
-  await rememberLeague(phone, ref.id);
-  return league;
+  const data = await post({ action: "create", phone, name, type, member });
+  return data.league;
 }
 
 export async function joinLeagueByCode(
-  phone: string, code: string,
-  member: { teamName: string; favoriteTeam: string | null; points: number }
+  phone: string, code: string, member: Member
 ): Promise<LeagueDoc> {
-  if (!db) throw new Error("Cloud not configured");
-  const q = query(collection(db, "leagues"), where("code", "==", code.trim().toUpperCase()));
-  const snap = await getDocs(q);
-  if (snap.empty) throw new Error("No league found with that code");
-  const league = snap.docs[0].data() as LeagueDoc;
-  await setDoc(doc(db, "leagues", league.id, "members", phone), { uid: phone, ...member, joinedAt: serverTimestamp() });
-  await rememberLeague(phone, league.id);
-  return league;
+  const data = await post({ action: "join", phone, code, member });
+  return data.league;
 }
 
-async function rememberLeague(uid: string, leagueId: string) {
-  if (!db) return;
-  const userRef = doc(db, "users", uid);
-  const snap = await getDoc(userRef);
-  const existing: string[] = snap.exists() ? snap.data().leagueIds ?? [] : [];
-  if (!existing.includes(leagueId)) {
-    await setDoc(userRef, { leagueIds: [...existing, leagueId] }, { merge: true });
+export async function refreshMyMembership(phone: string, member: Member): Promise<void> {
+  try {
+    await post({ action: "refresh", phone, member });
+  } catch {
+    // non-fatal — standings just show last known points
   }
 }
 
-export async function getMyLeagues(uid: string): Promise<{ league: LeagueDoc; members: MemberDoc[] }[]> {
-  if (!db) return [];
-  const userSnap = await getDoc(doc(db, "users", uid));
-  const ids: string[] = userSnap.exists() ? userSnap.data().leagueIds ?? [] : [];
-  const out: { league: LeagueDoc; members: MemberDoc[] }[] = [];
-  for (const id of ids) {
-    const lSnap = await getDoc(doc(db, "leagues", id));
-    if (!lSnap.exists()) continue;
-    const mSnap = await getDocs(collection(db, "leagues", id, "members"));
-    const members = mSnap.docs
-      .map((d) => d.data() as MemberDoc)
-      .sort((a, b) => b.points - a.points);
-    out.push({ league: lSnap.data() as LeagueDoc, members });
-  }
-  return out;
-}
-
-// Push my latest points/team into every league I'm a member of.
-export async function refreshMyMembership(
-  phone: string,
-  member: { teamName: string; favoriteTeam: string | null; points: number }
-) {
-  if (!db) return;
-  const userSnap = await getDoc(doc(db, "users", phone));
-  const ids: string[] = userSnap.exists() ? userSnap.data().leagueIds ?? [] : [];
-  await Promise.all(
-    ids.map((id) =>
-      setDoc(doc(db!, "leagues", id, "members", phone), { uid: phone, ...member }, { merge: true })
-    )
-  );
+export async function getMyLeagues(phone: string): Promise<{ league: LeagueDoc; members: MemberDoc[] }[]> {
+  const res = await fetch(`/api/leagues?phone=${encodeURIComponent(phone)}`);
+  const data = await res.json();
+  if (data.configured === false) throw new Error("Cloud database not connected yet (see SETUP_KEYS.md)");
+  return data.leagues ?? [];
 }

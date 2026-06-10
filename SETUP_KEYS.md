@@ -5,39 +5,23 @@ Each feature degrades gracefully until its key exists — nothing breaks.
 
 ---
 
-## 1. Firebase — Simple Phone Login + Cloud Save + Leagues (5 min) — REQUIRED FIRST
+## 1. Vercel Neon Database — Cloud Save + Leagues (ONE CLICK) — REQUIRED FIRST
 
-> ✅ Env keys already added to Vercel. No OTP/SMS anymore — login is just
-> "enter your number". Only two console steps remain:
+> No Firebase anymore. Everything runs on Vercel. Login is just
+> "enter your number" — already live. One click connects the database:
 
-**a) Enable Anonymous sign-in** (powers the invisible cloud session — no SMS setup needed):
-Firebase console → Build → **Authentication** → Sign-in method → enable **Anonymous**.
-Also: Authentication → Settings → Authorized domains → add `fantasy.amritpodder.dev`.
-
-**b) Create Firestore + rules:**
-Build → **Firestore Database** → Create database → production mode → region `asia-south1`.
-Rules tab → paste → **Publish**:
-
-```
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /users/{phoneId} {
-      allow read, write: if request.auth != null;
-    }
-    match /leagues/{leagueId} {
-      allow read, create, update: if request.auth != null;
-      allow delete: if request.auth != null;
-      match /members/{memberId} {
-        allow read, write: if request.auth != null;
-      }
-    }
-  }
-}
+1. Go to https://vercel.com/dashboard → open the **wc2026-fantasy-pwa** project
+2. **Storage** tab → **Create Database** → choose **Neon** (Postgres) →
+   region **Singapore (ap-southeast-1)** or closest → Create & Connect
+3. That's it — Vercel auto-injects `DATABASE_URL` into the project.
+   Tables create themselves on first use.
+4. Redeploy so the env var loads:
+```bash
+cd wc2026-fantasy-pwa && npx vercel deploy --prod --yes
 ```
 
-Unlocks: number-only login, cloud save keyed to the phone number
-(same number = same team on any device), **crew leagues with live leaderboards**.
+Unlocks: cloud save keyed to the phone number (same number = same team on
+any device, cloud data loads on login), **crew leagues with live leaderboards**.
 
 ---
 

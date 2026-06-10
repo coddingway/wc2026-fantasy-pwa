@@ -1,17 +1,13 @@
 "use client";
 import { createContext, useContext, useEffect, useState } from "react";
-import { signInAnonymously } from "firebase/auth";
-import { auth, firebaseEnabled } from "./firebase";
 
-// Simple phone-number identity (no OTP, friends-crew app).
-// The number IS the account key. Cloud features use an invisible
-// anonymous Firebase session purely to satisfy Firestore rules.
+// Simple phone-number identity. The number IS the account key.
+// Data: localStorage (zustand persist) + Vercel/Neon cloud via CloudSync.
 
 const STORAGE_KEY = "gs-phone";
 
 export function normalizePhone(raw: string): string | null {
-  const trimmed = raw.trim();
-  const digits = trimmed.replace(/[^\d+]/g, "");
+  const digits = raw.trim().replace(/[^\d+]/g, "");
   const full = digits.startsWith("+") ? digits : `+91${digits}`;
   return full.replace(/\D/g, "").length >= 10 ? full : null;
 }
@@ -27,19 +23,10 @@ interface AuthCtx {
 const Ctx = createContext<AuthCtx>({
   phone: null,
   loading: true,
-  enabled: false,
+  enabled: true,
   login: async () => false,
   signOut: () => {},
 });
-
-async function ensureCloudSession() {
-  if (!firebaseEnabled || !auth) return;
-  try {
-    if (!auth.currentUser) await signInAnonymously(auth);
-  } catch {
-    // Anonymous provider not enabled yet — cloud sync will no-op, local still works
-  }
-}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [phone, setPhone] = useState<string | null>(null);
@@ -47,17 +34,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const saved = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
-    if (saved) {
-      setPhone(saved);
-      ensureCloudSession();
-    }
+    if (saved) setPhone(saved);
     setLoading(false);
   }, []);
 
   const login = async (raw: string): Promise<boolean> => {
     const normalized = normalizePhone(raw);
     if (!normalized) return false;
-    await ensureCloudSession();
     localStorage.setItem(STORAGE_KEY, normalized);
     setPhone(normalized);
     return true;
@@ -69,7 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <Ctx.Provider value={{ phone, loading, enabled: firebaseEnabled, login, signOut }}>
+    <Ctx.Provider value={{ phone, loading, enabled: true, login, signOut }}>
       {children}
     </Ctx.Provider>
   );

@@ -1,13 +1,11 @@
 "use client";
 import { useEffect, useRef } from "react";
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth-context";
 import { useFantasyStore } from "@/lib/store";
 
-// Per-phone cloud save. On login: cloud data wins (fetch + show updated).
-// If no cloud data yet: lift local progress up. After that: every change
-// writes to Firestore (debounced) AND stays in localStorage via zustand.
+// Per-phone cloud save via /api/user (Vercel + Neon Postgres).
+// On login: cloud state fetched and shown (cloud wins). First login lifts
+// local progress up. After that: localStorage (zustand) + debounced cloud PUT.
 
 const SYNC_KEYS = [
   "squad", "budget", "totalBudget", "totalPoints", "roundPoints",
@@ -27,36 +25,43 @@ export default function CloudSync() {
   const loaded = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // On login: fetch cloud state and show it (cloud is source of truth)
+  // On login: cloud-first load
   useEffect(() => {
     loaded.current = false;
-    if (!phone || !db) return;
-    const ref = doc(db, "users", phone);
-    getDoc(ref)
-      .then((snap) => {
-        if (snap.exists()) {
-          const data = snap.data();
+    if (!phone) return;
+    const url = `/api/user/${encodeURIComponent(phone)}`;
+    fetch(url)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.state) {
           const patch: Record<string, unknown> = {};
-          for (const k of SYNC_KEYS) if (k in data) patch[k] = data[k];
+          for (const k of SYNC_KEYS) if (k in data.state) patch[k] = data.state[k];
           useFantasyStore.setState(patch);
-        } else {
-          // First login for this number — push local progress to the cloud
-          setDoc(ref, { ...pickState(), phone, updatedAt: serverTimestamp() }).catch(() => {});
+        } else if (data.configured) {
+          // first login for this number — push local progress to the cloud
+          fetch(url, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ state: pickState() }),
+          }).catch(() => {});
         }
         loaded.current = true;
       })
-      .catch(() => { loaded.current = true; }); // offline/rules issue: stay local
+      .catch(() => { loaded.current = true; }); // offline → stay local
   }, [phone]);
 
-  // Every change → debounced cloud write (localStorage handled by zustand persist)
+  // Every change → debounced cloud write
   useEffect(() => {
-    if (!phone || !db) return;
+    if (!phone) return;
     const unsub = useFantasyStore.subscribe(() => {
       if (!loaded.current) return;
       if (timer.current) clearTimeout(timer.current);
       timer.current = setTimeout(() => {
-        setDoc(doc(db!, "users", phone), { ...pickState(), phone, updatedAt: serverTimestamp() }, { merge: true })
-          .catch(() => {});
+        fetch(`/api/user/${encodeURIComponent(phone)}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ state: pickState() }),
+        }).catch(() => {});
       }, 1500);
     });
     return () => {
