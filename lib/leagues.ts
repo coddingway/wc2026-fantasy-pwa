@@ -2,7 +2,6 @@ import {
   collection, doc, getDoc, getDocs, setDoc, query, where, serverTimestamp,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import type { User } from "firebase/auth";
 
 export interface LeagueDoc {
   id: string;
@@ -26,30 +25,30 @@ function genCode(name: string) {
 }
 
 export async function createLeague(
-  user: User, name: string, type: "public" | "private",
+  phone: string, name: string, type: "public" | "private",
   member: { teamName: string; favoriteTeam: string | null; points: number }
 ): Promise<LeagueDoc> {
-  if (!db) throw new Error("Login required");
+  if (!db) throw new Error("Cloud not configured");
   const code = genCode(name);
   const ref = doc(collection(db, "leagues"));
-  const league: LeagueDoc = { id: ref.id, name, code, type, ownerUid: user.uid, ownerName: member.teamName };
+  const league: LeagueDoc = { id: ref.id, name, code, type, ownerUid: phone, ownerName: member.teamName };
   await setDoc(ref, { ...league, createdAt: serverTimestamp() });
-  await setDoc(doc(db, "leagues", ref.id, "members", user.uid), { uid: user.uid, ...member, joinedAt: serverTimestamp() });
-  await rememberLeague(user.uid, ref.id);
+  await setDoc(doc(db, "leagues", ref.id, "members", phone), { uid: phone, ...member, joinedAt: serverTimestamp() });
+  await rememberLeague(phone, ref.id);
   return league;
 }
 
 export async function joinLeagueByCode(
-  user: User, code: string,
+  phone: string, code: string,
   member: { teamName: string; favoriteTeam: string | null; points: number }
 ): Promise<LeagueDoc> {
-  if (!db) throw new Error("Login required");
+  if (!db) throw new Error("Cloud not configured");
   const q = query(collection(db, "leagues"), where("code", "==", code.trim().toUpperCase()));
   const snap = await getDocs(q);
   if (snap.empty) throw new Error("No league found with that code");
   const league = snap.docs[0].data() as LeagueDoc;
-  await setDoc(doc(db, "leagues", league.id, "members", user.uid), { uid: user.uid, ...member, joinedAt: serverTimestamp() });
-  await rememberLeague(user.uid, league.id);
+  await setDoc(doc(db, "leagues", league.id, "members", phone), { uid: phone, ...member, joinedAt: serverTimestamp() });
+  await rememberLeague(phone, league.id);
   return league;
 }
 
@@ -82,15 +81,15 @@ export async function getMyLeagues(uid: string): Promise<{ league: LeagueDoc; me
 
 // Push my latest points/team into every league I'm a member of.
 export async function refreshMyMembership(
-  user: User,
+  phone: string,
   member: { teamName: string; favoriteTeam: string | null; points: number }
 ) {
   if (!db) return;
-  const userSnap = await getDoc(doc(db, "users", user.uid));
+  const userSnap = await getDoc(doc(db, "users", phone));
   const ids: string[] = userSnap.exists() ? userSnap.data().leagueIds ?? [] : [];
   await Promise.all(
     ids.map((id) =>
-      setDoc(doc(db!, "leagues", id, "members", user.uid), { uid: user.uid, ...member }, { merge: true })
+      setDoc(doc(db!, "leagues", id, "members", phone), { uid: phone, ...member }, { merge: true })
     )
   );
 }

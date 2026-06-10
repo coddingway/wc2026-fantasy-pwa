@@ -9,7 +9,7 @@ import { getTeam } from "@/lib/themes";
 
 export default function LeaguesPage() {
   const { teamName, totalPoints, favoriteTeam } = useFantasyStore();
-  const { user, enabled } = useAuth();
+  const { phone, enabled } = useAuth();
   const [tab, setTab] = useState<"mine" | "create" | "join">("mine");
   const [myLeagues, setMyLeagues] = useState<{ league: LeagueDoc; members: MemberDoc[] }[]>([]);
   const [loading, setLoading] = useState(false);
@@ -22,26 +22,26 @@ export default function LeaguesPage() {
   const me = { teamName, favoriteTeam, points: totalPoints };
 
   const load = useCallback(async () => {
-    if (!user) return;
+    if (!phone) return;
     setLoading(true);
     try {
-      await refreshMyMembership(user, me);
-      setMyLeagues(await getMyLeagues(user.uid));
+      await refreshMyMembership(phone, me);
+      setMyLeagues(await getMyLeagues(phone));
     } catch (e) {
       setMsg(e instanceof Error ? e.message : "Failed to load leagues");
     } finally {
       setLoading(false);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, teamName, totalPoints, favoriteTeam]);
+  }, [phone, teamName, totalPoints, favoriteTeam]);
 
   useEffect(() => { load(); }, [load]);
 
   const handleCreate = async () => {
-    if (!user || !name.trim()) return;
+    if (!phone || !name.trim()) return;
     setMsg(""); setLoading(true);
     try {
-      const l = await createLeague(user, name.trim(), type, me);
+      const l = await createLeague(phone, name.trim(), type, me);
       setCreated(l.code); setName(""); setTab("mine");
       await load();
     } catch (e) { setMsg(e instanceof Error ? e.message : "Create failed"); }
@@ -49,17 +49,17 @@ export default function LeaguesPage() {
   };
 
   const handleJoin = async () => {
-    if (!user || !code.trim()) return;
+    if (!phone || !code.trim()) return;
     setMsg(""); setLoading(true);
     try {
-      await joinLeagueByCode(user, code, me);
+      await joinLeagueByCode(phone, code, me);
       setCode(""); setTab("mine");
       await load();
     } catch (e) { setMsg(e instanceof Error ? e.message : "Join failed"); }
     finally { setLoading(false); }
   };
 
-  if (!enabled || !user) {
+  if (!enabled || !phone) {
     return (
       <div className="px-4 py-12 max-w-lg mx-auto text-center space-y-4">
         <p className="text-5xl">🏆</p>
@@ -125,7 +125,7 @@ export default function LeaguesPage() {
               <div className="space-y-1">
                 {members.map((m, i) => {
                   const t = getTeam(m.favoriteTeam);
-                  const isMe = m.uid === user.uid;
+                  const isMe = m.uid === phone;
                   return (
                     <div key={m.uid} className={`flex items-center gap-2 p-2 rounded-xl ${isMe ? "bg-emerald-500/10 border border-emerald-500/30" : "bg-slate-800"}`}>
                       <span className={`font-black w-6 text-sm ${i === 0 ? "text-yellow-400" : i === 1 ? "text-slate-300" : i === 2 ? "text-orange-400" : "text-slate-500"}`}>#{i + 1}</span>

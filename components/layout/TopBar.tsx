@@ -7,7 +7,7 @@ import { getTeam } from "@/lib/themes";
 
 export default function TopBar() {
   const { teamName, totalPoints, favoriteTeam } = useFantasyStore();
-  const { user, enabled } = useAuth();
+  const { phone, enabled } = useAuth();
   const team = getTeam(favoriteTeam);
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur border-b border-slate-800 h-16 flex items-center px-4 justify-between">
@@ -25,8 +25,8 @@ export default function TopBar() {
           <Trophy size={14} className="text-emerald-400" />
           <span className="text-emerald-400 font-bold text-sm">{totalPoints} pts</span>
         </div>
-        <Link href="/login" className="relative p-1.5 rounded-full hover:bg-slate-800 transition" aria-label={user ? "Account" : "Login"}>
-          {user ? (
+        <Link href="/login" className="relative p-1.5 rounded-full hover:bg-slate-800 transition" aria-label={phone ? "Account" : "Login"}>
+          {phone ? (
             <>
               <UserCircle2 size={22} className="text-emerald-400" />
               <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-emerald-400 rounded-full" />

@@ -5,7 +5,10 @@ import { db } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth-context";
 import { useFantasyStore } from "@/lib/store";
 
-// Keys of the store we persist to the cloud (state only, no functions)
+// Per-phone cloud save. On login: cloud data wins (fetch + show updated).
+// If no cloud data yet: lift local progress up. After that: every change
+// writes to Firestore (debounced) AND stays in localStorage via zustand.
+
 const SYNC_KEYS = [
   "squad", "budget", "totalBudget", "totalPoints", "roundPoints",
   "transfers", "freeTransfersRemaining", "boosters", "predictions",
@@ -20,45 +23,47 @@ function pickState() {
 }
 
 export default function CloudSync() {
-  const { user } = useAuth();
+  const { phone } = useAuth();
   const loaded = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // On login: load cloud state (or migrate local state up on first login)
+  // On login: fetch cloud state and show it (cloud is source of truth)
   useEffect(() => {
     loaded.current = false;
-    if (!user || !db) return;
-    const ref = doc(db, "users", user.uid);
-    getDoc(ref).then((snap) => {
-      if (snap.exists()) {
-        const data = snap.data();
-        const patch: Record<string, unknown> = {};
-        for (const k of SYNC_KEYS) if (k in data) patch[k] = data[k];
-        useFantasyStore.setState(patch);
-      } else {
-        // First login — lift existing local progress to the cloud
-        setDoc(ref, { ...pickState(), phone: user.phoneNumber, updatedAt: serverTimestamp() });
-      }
-      loaded.current = true;
-    });
-  }, [user]);
+    if (!phone || !db) return;
+    const ref = doc(db, "users", phone);
+    getDoc(ref)
+      .then((snap) => {
+        if (snap.exists()) {
+          const data = snap.data();
+          const patch: Record<string, unknown> = {};
+          for (const k of SYNC_KEYS) if (k in data) patch[k] = data[k];
+          useFantasyStore.setState(patch);
+        } else {
+          // First login for this number — push local progress to the cloud
+          setDoc(ref, { ...pickState(), phone, updatedAt: serverTimestamp() }).catch(() => {});
+        }
+        loaded.current = true;
+      })
+      .catch(() => { loaded.current = true; }); // offline/rules issue: stay local
+  }, [phone]);
 
-  // On any change: debounced write to Firestore
+  // Every change → debounced cloud write (localStorage handled by zustand persist)
   useEffect(() => {
-    if (!user || !db) return;
+    if (!phone || !db) return;
     const unsub = useFantasyStore.subscribe(() => {
-      if (!loaded.current) return; // don't write while hydrating
+      if (!loaded.current) return;
       if (timer.current) clearTimeout(timer.current);
       timer.current = setTimeout(() => {
-        const ref = doc(db!, "users", user.uid);
-        setDoc(ref, { ...pickState(), phone: user.phoneNumber, updatedAt: serverTimestamp() }, { merge: true });
+        setDoc(doc(db!, "users", phone), { ...pickState(), phone, updatedAt: serverTimestamp() }, { merge: true })
+          .catch(() => {});
       }, 1500);
     });
     return () => {
       unsub();
       if (timer.current) clearTimeout(timer.current);
     };
-  }, [user]);
+  }, [phone]);
 
   return null;
 }

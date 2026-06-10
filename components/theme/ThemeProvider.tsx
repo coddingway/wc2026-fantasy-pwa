@@ -7,7 +7,7 @@ import { applyTeamTheme } from "@/lib/themes";
 
 export default function ThemeProvider() {
   const favoriteTeam = useFantasyStore((s) => s.favoriteTeam);
-  const { user, loading } = useAuth();
+  const { phone, loading } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
 
@@ -18,11 +18,11 @@ export default function ThemeProvider() {
 
   // After login, picking a favourite team is mandatory
   useEffect(() => {
-    if (loading || !user) return;
+    if (loading || !phone) return;
     if (!favoriteTeam && pathname !== "/team-select" && pathname !== "/login") {
       router.replace("/team-select");
     }
-  }, [user, loading, favoriteTeam, pathname, router]);
+  }, [phone, loading, favoriteTeam, pathname, router]);
 
   return null;
 }

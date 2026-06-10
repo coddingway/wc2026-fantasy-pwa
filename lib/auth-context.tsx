@@ -1,73 +1,76 @@
 "use client";
-import { createContext, useContext, useEffect, useState, useRef } from "react";
-import {
-  onAuthStateChanged,
-  signInWithPhoneNumber,
-  RecaptchaVerifier,
-  signOut as fbSignOut,
-  type User,
-  type ConfirmationResult,
-} from "firebase/auth";
+import { createContext, useContext, useEffect, useState } from "react";
+import { signInAnonymously } from "firebase/auth";
 import { auth, firebaseEnabled } from "./firebase";
 
+// Simple phone-number identity (no OTP, friends-crew app).
+// The number IS the account key. Cloud features use an invisible
+// anonymous Firebase session purely to satisfy Firestore rules.
+
+const STORAGE_KEY = "gs-phone";
+
+export function normalizePhone(raw: string): string | null {
+  const trimmed = raw.trim();
+  const digits = trimmed.replace(/[^\d+]/g, "");
+  const full = digits.startsWith("+") ? digits : `+91${digits}`;
+  return full.replace(/\D/g, "").length >= 10 ? full : null;
+}
+
 interface AuthCtx {
-  user: User | null;
+  phone: string | null;
   loading: boolean;
   enabled: boolean;
-  sendOTP: (phone: string) => Promise<void>;
-  verifyOTP: (code: string) => Promise<void>;
-  signOut: () => Promise<void>;
+  login: (raw: string) => Promise<boolean>;
+  signOut: () => void;
 }
 
 const Ctx = createContext<AuthCtx>({
-  user: null,
+  phone: null,
   loading: true,
   enabled: false,
-  sendOTP: async () => {},
-  verifyOTP: async () => {},
-  signOut: async () => {},
+  login: async () => false,
+  signOut: () => {},
 });
 
+async function ensureCloudSession() {
+  if (!firebaseEnabled || !auth) return;
+  try {
+    if (!auth.currentUser) await signInAnonymously(auth);
+  } catch {
+    // Anonymous provider not enabled yet — cloud sync will no-op, local still works
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [phone, setPhone] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const confirmRef = useRef<ConfirmationResult | null>(null);
-  const recaptchaRef = useRef<RecaptchaVerifier | null>(null);
 
   useEffect(() => {
-    if (!firebaseEnabled || !auth) {
-      setLoading(false);
-      return;
+    const saved = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
+    if (saved) {
+      setPhone(saved);
+      ensureCloudSession();
     }
-    return onAuthStateChanged(auth, (u) => {
-      setUser(u);
-      setLoading(false);
-    });
+    setLoading(false);
   }, []);
 
-  const sendOTP = async (phone: string) => {
-    if (!auth) throw new Error("Firebase not configured");
-    if (!recaptchaRef.current) {
-      recaptchaRef.current = new RecaptchaVerifier(auth, "recaptcha-container", {
-        size: "invisible",
-      });
-    }
-    confirmRef.current = await signInWithPhoneNumber(auth, phone, recaptchaRef.current);
+  const login = async (raw: string): Promise<boolean> => {
+    const normalized = normalizePhone(raw);
+    if (!normalized) return false;
+    await ensureCloudSession();
+    localStorage.setItem(STORAGE_KEY, normalized);
+    setPhone(normalized);
+    return true;
   };
 
-  const verifyOTP = async (code: string) => {
-    if (!confirmRef.current) throw new Error("Request an OTP first");
-    await confirmRef.current.confirm(code);
-  };
-
-  const signOut = async () => {
-    if (auth) await fbSignOut(auth);
+  const signOut = () => {
+    localStorage.removeItem(STORAGE_KEY);
+    setPhone(null);
   };
 
   return (
-    <Ctx.Provider value={{ user, loading, enabled: firebaseEnabled, sendOTP, verifyOTP, signOut }}>
+    <Ctx.Provider value={{ phone, loading, enabled: firebaseEnabled, login, signOut }}>
       {children}
-      <div id="recaptcha-container" />
     </Ctx.Provider>
   );
 }

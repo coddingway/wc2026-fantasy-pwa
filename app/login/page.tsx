@@ -2,65 +2,44 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { Phone, ShieldCheck, LogOut, Cloud } from "lucide-react";
+import { useFantasyStore } from "@/lib/store";
+import { Phone, LogOut, Cloud } from "lucide-react";
 
 export default function LoginPage() {
-  const { user, enabled, sendOTP, verifyOTP, signOut } = useAuth();
+  const { phone, login, signOut } = useAuth();
+  const favoriteTeam = useFantasyStore((s) => s.favoriteTeam);
   const router = useRouter();
-  const [phone, setPhone] = useState("");
-  const [code, setCode] = useState("");
-  const [step, setStep] = useState<"phone" | "otp">("phone");
+  const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
-  const fullPhone = phone.startsWith("+") ? phone : `+91${phone.replace(/\D/g, "")}`;
-
-  const handleSend = async () => {
+  const handleLogin = async () => {
     setError(""); setBusy(true);
-    try {
-      await sendOTP(fullPhone);
-      setStep("otp");
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Failed to send OTP. Check the number.");
-    } finally { setBusy(false); }
+    const ok = await login(input);
+    setBusy(false);
+    if (!ok) {
+      setError("Enter a valid phone number (at least 10 digits).");
+      return;
+    }
+    router.push(favoriteTeam ? "/" : "/team-select");
   };
 
-  const handleVerify = async () => {
-    setError(""); setBusy(true);
-    try {
-      await verifyOTP(code);
-      router.push("/");
-    } catch {
-      setError("Wrong code. Try again.");
-    } finally { setBusy(false); }
-  };
-
-  if (!enabled) {
-    return (
-      <div className="px-4 py-16 max-w-lg mx-auto text-center">
-        <p className="text-5xl mb-4">🔧</p>
-        <p className="text-white font-bold text-xl">Login Not Configured Yet</p>
-        <p className="text-slate-400 text-sm mt-2">
-          Firebase keys are missing. Add the NEXT_PUBLIC_FIREBASE_* env vars
-          (see SETUP_FIREBASE.md) and redeploy.
-        </p>
-      </div>
-    );
-  }
-
-  if (user) {
+  if (phone) {
     return (
       <div className="px-4 py-8 max-w-lg mx-auto space-y-4">
         <div className="bg-gradient-to-r from-emerald-600 to-teal-700 rounded-2xl p-6 text-center">
           <p className="text-4xl mb-2">✅</p>
           <p className="text-white font-bold text-lg">You're logged in, homie!</p>
-          <p className="text-emerald-100 text-sm mt-1">{user.phoneNumber}</p>
+          <p className="text-emerald-100 text-sm mt-1">{phone}</p>
         </div>
         <div className="bg-slate-900 rounded-2xl p-4 border border-emerald-500/30 flex items-center gap-3">
           <Cloud size={20} className="text-emerald-400" />
           <div>
             <p className="text-white text-sm font-semibold">Cloud Save Active</p>
-            <p className="text-slate-400 text-xs">Every change to your squad, transfers, captain & predictions is saved automatically. Log in on any device to continue.</p>
+            <p className="text-slate-400 text-xs">
+              Your squad, transfers, captain & predictions save automatically.
+              Log in with this number on any device and your latest data loads right up.
+            </p>
           </div>
         </div>
         <button onClick={() => signOut()}
@@ -76,58 +55,36 @@ export default function LoginPage() {
       <div className="text-center mb-2">
         <p className="text-5xl mb-3">⚽</p>
         <p className="text-white font-black text-2xl">Grove Street FC</p>
-        <p className="text-slate-400 text-sm">Login with your phone — your squad saves to the cloud and never resets</p>
+        <p className="text-slate-400 text-sm">Enter your phone number — your squad saves to the cloud and follows you everywhere</p>
       </div>
 
-      {step === "phone" ? (
-        <div className="bg-slate-900 rounded-2xl p-5 border border-slate-800 space-y-4">
-          <div className="flex items-center gap-2">
-            <Phone size={16} className="text-emerald-400" />
-            <p className="text-white font-semibold">Enter Phone Number</p>
-          </div>
-          <input
-            type="tel" inputMode="tel" value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder="+91 98765 43210"
-            className="w-full bg-slate-800 text-white text-lg px-4 py-3 rounded-xl border border-slate-700 focus:outline-none focus:border-emerald-500 tracking-wide"
-          />
-          <p className="text-slate-500 text-xs">No country code? We'll assume India (+91). Friends abroad: include your code, e.g. +44...</p>
-          {error && <p className="text-red-400 text-sm">{error}</p>}
-          <button onClick={handleSend} disabled={busy || phone.replace(/\D/g, "").length < 10}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white font-bold py-3.5 rounded-xl transition-all">
-            {busy ? "Sending OTP..." : "Send OTP"}
-          </button>
+      <div className="bg-slate-900 rounded-2xl p-5 border border-slate-800 space-y-4">
+        <div className="flex items-center gap-2">
+          <Phone size={16} className="text-emerald-400" />
+          <p className="text-white font-semibold">Phone Number</p>
         </div>
-      ) : (
-        <div className="bg-slate-900 rounded-2xl p-5 border border-slate-800 space-y-4">
-          <div className="flex items-center gap-2">
-            <ShieldCheck size={16} className="text-emerald-400" />
-            <p className="text-white font-semibold">Enter the 6-digit code</p>
-          </div>
-          <p className="text-slate-400 text-sm">Sent to {fullPhone}</p>
-          <input
-            type="text" inputMode="numeric" maxLength={6} value={code}
-            onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-            placeholder="••••••"
-            className="w-full bg-slate-800 text-white text-2xl text-center px-4 py-3 rounded-xl border border-slate-700 focus:outline-none focus:border-emerald-500 tracking-[0.5em] font-mono"
-          />
-          {error && <p className="text-red-400 text-sm">{error}</p>}
-          <button onClick={handleVerify} disabled={busy || code.length !== 6}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white font-bold py-3.5 rounded-xl transition-all">
-            {busy ? "Verifying..." : "Verify & Login"}
-          </button>
-          <button onClick={() => { setStep("phone"); setCode(""); setError(""); }}
-            className="w-full text-slate-400 text-sm py-1">← Change number</button>
-        </div>
-      )}
+        <input
+          type="tel" inputMode="tel" value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+          placeholder="98765 43210"
+          className="w-full bg-slate-800 text-white text-lg px-4 py-3 rounded-xl border border-slate-700 focus:outline-none focus:border-emerald-500 tracking-wide"
+        />
+        <p className="text-slate-500 text-xs">India numbers: just the 10 digits. Abroad: include country code, e.g. +44...</p>
+        {error && <p className="text-red-400 text-sm">{error}</p>}
+        <button onClick={handleLogin} disabled={busy || input.replace(/\D/g, "").length < 10}
+          className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white font-bold py-3.5 rounded-xl transition-all">
+          {busy ? "Logging in..." : "Login"}
+        </button>
+      </div>
 
       <div className="bg-slate-900/60 rounded-2xl p-4 border border-slate-800">
-        <p className="text-slate-400 text-xs font-semibold uppercase mb-2">Why login?</p>
+        <p className="text-slate-400 text-xs font-semibold uppercase mb-2">What you get</p>
         {[
-          "☁️ Squad, transfers & captain saved forever — no resets",
-          "📱 Use the same team on phone, tablet, laptop",
-          "🏆 Compete with the crew on leaderboards (coming)",
-          "🧠 Plan your WC2026 strategy & probable transfers",
+          "☁️ Squad, transfers & captain saved to the cloud — never resets",
+          "📱 Same number = same team on every device",
+          "🎨 Pick your nation, app wears its colors",
+          "🏆 Create crew leagues & battle on leaderboards",
         ].map((b) => (
           <p key={b} className="text-slate-300 text-sm py-1">{b}</p>
         ))}

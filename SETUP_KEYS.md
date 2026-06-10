@@ -5,33 +5,39 @@ Each feature degrades gracefully until its key exists — nothing breaks.
 
 ---
 
-## 1. Firebase — Phone Login + Cloud Save + Leagues (10 min) — REQUIRED FIRST
+## 1. Firebase — Simple Phone Login + Cloud Save + Leagues (5 min) — REQUIRED FIRST
 
-Follow `SETUP_FIREBASE.md` for project creation, phone auth, and env vars.
+> ✅ Env keys already added to Vercel. No OTP/SMS anymore — login is just
+> "enter your number". Only two console steps remain:
 
-⚠️ **Updated Firestore rules** (leagues added) — paste these in
-Firestore → Rules and publish:
+**a) Enable Anonymous sign-in** (powers the invisible cloud session — no SMS setup needed):
+Firebase console → Build → **Authentication** → Sign-in method → enable **Anonymous**.
+Also: Authentication → Settings → Authorized domains → add `fantasy.amritpodder.dev`.
+
+**b) Create Firestore + rules:**
+Build → **Firestore Database** → Create database → production mode → region `asia-south1`.
+Rules tab → paste → **Publish**:
 
 ```
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /users/{uid} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+    match /users/{phoneId} {
+      allow read, write: if request.auth != null;
     }
     match /leagues/{leagueId} {
-      allow read, create: if request.auth != null;
-      allow update, delete: if request.auth != null && request.auth.uid == resource.data.ownerUid;
-      match /members/{uid} {
-        allow read: if request.auth != null;
-        allow write: if request.auth != null && request.auth.uid == uid;
+      allow read, create, update: if request.auth != null;
+      allow delete: if request.auth != null;
+      match /members/{memberId} {
+        allow read, write: if request.auth != null;
       }
     }
   }
 }
 ```
 
-Unlocks: phone login, cloud save, **real crew leagues with live leaderboards**.
+Unlocks: number-only login, cloud save keyed to the phone number
+(same number = same team on any device), **crew leagues with live leaderboards**.
 
 ---
 
