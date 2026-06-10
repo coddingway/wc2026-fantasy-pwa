@@ -16,9 +16,14 @@ export default function ThemeProvider() {
     applyTeamTheme(favoriteTeam);
   }, [favoriteTeam]);
 
-  // After login, picking a favourite team is mandatory
+  // Gate 1: login is mandatory — no phone, no entry.
+  // Gate 2: after login, picking a favourite team is mandatory.
   useEffect(() => {
-    if (loading || !phone) return;
+    if (loading) return;
+    if (!phone) {
+      if (pathname !== "/login") router.replace("/login");
+      return;
+    }
     if (!favoriteTeam && pathname !== "/team-select" && pathname !== "/login") {
       router.replace("/team-select");
     }
