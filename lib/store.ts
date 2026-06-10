@@ -18,6 +18,7 @@ export const INITIAL_FANTASY_STATE = {
   predictions: [] as Prediction[],
   badges: [] as Badge[],
   favoriteTeam: null as string | null,
+  ownerName: "",
   teamName: "My Team",
   notifications: true,
   darkMode: true,
@@ -66,6 +67,8 @@ interface FantasyStore {
   // Settings
   favoriteTeam: string | null;
   setFavoriteTeam: (code: string) => void;
+  ownerName: string;
+  setOwnerName: (name: string) => void;
   teamName: string;
   setTeamName: (name: string) => void;
   notifications: boolean;
@@ -157,6 +160,8 @@ export const useFantasyStore = create<FantasyStore>()(
 
       favoriteTeam: null,
       setFavoriteTeam: (favoriteTeam) => set({ favoriteTeam }),
+      ownerName: INITIAL_FANTASY_STATE.ownerName,
+      setOwnerName: (ownerName) => set({ ownerName }),
       teamName: INITIAL_FANTASY_STATE.teamName,
       setTeamName: (teamName) => set({ teamName }),
       notifications: true,

@@ -10,7 +10,7 @@ import { useFantasyStore, INITIAL_FANTASY_STATE } from "@/lib/store";
 const SYNC_KEYS = [
   "squad", "budget", "totalBudget", "totalPoints", "roundPoints",
   "transfers", "freeTransfersRemaining", "boosters", "predictions",
-  "badges", "teamName", "notifications", "darkMode", "favoriteTeam",
+  "badges", "teamName", "notifications", "darkMode", "favoriteTeam", "ownerName",
 ] as const;
 
 function pickState() {
@@ -41,9 +41,9 @@ export default function CloudSync() {
         } else {
           // BRAND-NEW number — fresh start. Wipe any leftover device state
           // so the new user sets up their own team from scratch.
-          // (Preserve favoriteTeam in case they already picked it this session.)
-          const { favoriteTeam } = useFantasyStore.getState();
-          useFantasyStore.setState({ ...INITIAL_FANTASY_STATE, favoriteTeam });
+          // (Preserve name + favoriteTeam entered this session.)
+          const { favoriteTeam, ownerName } = useFantasyStore.getState();
+          useFantasyStore.setState({ ...INITIAL_FANTASY_STATE, favoriteTeam, ownerName });
           if (data.configured) {
             fetch(url, {
               method: "PUT",

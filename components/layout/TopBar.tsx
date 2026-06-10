@@ -6,7 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import { getTeam } from "@/lib/themes";
 
 export default function TopBar() {
-  const { teamName, totalPoints, favoriteTeam } = useFantasyStore();
+  const { teamName, totalPoints, favoriteTeam, ownerName } = useFantasyStore();
   const { phone, enabled } = useAuth();
   const team = getTeam(favoriteTeam);
   return (
@@ -16,8 +16,10 @@ export default function TopBar() {
       <Link href="/team-select" className="flex items-center gap-2">
         <span className="text-2xl">{team ? team.flag : "⚽"}</span>
         <div>
-          <p className="text-xs text-emerald-400 font-semibold uppercase">{team ? team.name : "Grove Street FC"}</p>
-          <p className="text-sm font-bold text-white truncate max-w-[140px]">{teamName}</p>
+          <p className="text-xs text-emerald-400 font-semibold uppercase">{team ? team.name : "WC2026 Fantasy"}</p>
+          <p className="text-sm font-bold text-white truncate max-w-[140px]">
+            {phone && ownerName ? ownerName : teamName}
+          </p>
         </div>
       </Link>
       <div className="flex items-center gap-2">
