@@ -324,4 +324,86 @@ P0–P3 = a real product. P4 = the intelligence. P5 = the moonshot differentiato
 | 6-week event = short lifespan | Architecture is competition-agnostic (`rounds`, `fixtures` are generic) — relaunch free for Euro 2028 / WC 2030 |
 | No revenue but real running costs | Free-tier infra everywhere (Neon, Upstash, Vercel hobby, football-data.org); aggressive caching on AI calls; only paid item if needed is ~$39/mo match data for 6 weeks |
 | Solo-dev scope creep | Phases are strictly ordered; P0–P1 before anything shiny |
+
+---
+
+## 15. Production Operations (the unglamorous must-haves)
+
+Items every production platform needs that feature plans usually forget:
+
+### Quality & delivery
+- **Testing:** Vitest unit tests for the rules engine (the one place a bug = wrong
+  points = angry users) and points calculator; Playwright smoke tests for the
+  5 critical flows (build team, transfer, captain change, join league, live view).
+  Rules engine targets ~100% coverage — it's pure functions, cheap to test.
+- **CI/CD:** GitHub Actions — typecheck + lint + test on every PR; Vercel preview
+  deployments already exist per-branch; protect `main`.
+- **Database migrations:** Drizzle ORM with versioned migrations (pairs perfectly
+  with Neon branching — preview deploys get a DB branch).
+
+### Observability
+- **Error tracking:** Sentry (free tier) — client + server.
+- **Uptime & cron monitoring:** healthcheck endpoint + Better Stack/UptimeRobot free
+  tier; every Inngest/cron job reports success-failure (a silently dead ingestion
+  job during a live round is the worst failure mode this platform has).
+- **Product analytics:** PostHog free tier (self-serve funnels: onboarding
+  completion, sync adoption, feature usage) — privacy-friendly config, EU hosting.
+
+### Security
+- Rate limiting on all mutating endpoints (Upstash Ratelimit).
+- FIFA tokens (if Option A ships) encrypted at rest (AES-256-GCM, key in env),
+  never logged, purge on disconnect.
+- Standard headers (CSP, HSTS) via Next middleware; dependency audit in CI.
+- Input validation with Zod at every API boundary (tRPC gives this nearly free).
+
+### Compliance & legal
+- Privacy policy + terms pages (required by OAuth providers and app stores).
+- GDPR: export-my-data + delete-my-account flows (delete already noted in §10).
+- Cookie/consent banner only if analytics requires it (PostHog cookieless mode avoids it).
+- Clear "not affiliated with FIFA" disclaimer — naming/branding must avoid
+  implying official status (consider product name without "FIFA" in it).
+
+### Internationalization & accessibility
+- **i18n:** next-intl with English at launch; Spanish + Portuguese next (WC audience);
+  all strings externalized from day one — retrofitting i18n is brutal.
+- **Time zones:** all kickoff/lockout times stored UTC, rendered in user's locale —
+  a wrong lockout reminder is a catastrophic bug for a fantasy app.
+- **Accessibility:** WCAG AA pass on the 5 core flows; the current dark theme needs
+  a contrast audit (slate-400 on slate-900 body text is borderline).
+
+### Admin & moderation
+- Internal admin panel (simple protected route): user lookup, league moderation
+  (rename/remove offensive content), feature flags, kill switches (FIFA sync,
+  AI endpoints), manual points-correction tool for feed errors.
+- Profanity filter on team names, league names, and trash-talk board.
+
+### Data lifecycle
+- Neon point-in-time recovery covers backups (verify retention on free tier).
+- Post-tournament: archive mode — leaderboards/history become read-only static
+  pages; expensive infra (Redis, data feeds, crons) shuts down.
+
+---
+
+## 16. Deliberately Deferred (from the 65-idea list)
+
+Explicitly **not** in this plan, with reasons — so nothing is silently missing:
+
+| Idea | Status | Reason |
+|------|--------|--------|
+| Voice assistant / Alexa skill | Deferred | Niche; Web Speech API can come post-P6 |
+| Jersey scanner (computer vision) | Deferred | High effort, gimmick-level value |
+| AR pitch view | Cut or P6 | WebXR support too patchy on iOS Safari |
+| Live watch party | Deferred | Realtime video-sync infra ≫ value for v1 |
+| Podcast generator | Deferred | TTS cost with zero revenue; written briefing covers it |
+| Auto highlight reels / YouTube clipper | Deferred | Rights/copyright minefield |
+| Kids mode | Deferred | Separate UX track; revisit if audience appears |
+| Apple Watch / home-screen widgets | Deferred | Requires native app, not PWA |
+| Chrome extension / Discord bot | Deferred | Telegram bot covers the bot need first |
+| Fantasy GM simulation mode | Deferred | Separate game, not companion-platform scope |
+| Metaverse stadium / NFTs / biometrics | Cut | Not aligned with a free community product |
+| Cross-sport platform | Future | Architecture supports it; not this tournament |
+| Mentor system / fantasy school expansion | Partial | Education page ships as-is; mentoring needs critical user mass |
+| Daily challenges | P6 candidate | Fun but needs the leagues backend first (P3) |
+| Historical WC fantasy database | Deferred | 2018/2022 fantasy data not publicly available |
+| Calendar (Google/Apple) integration | P6 candidate | Easy win post-launch; .ics export is trivial |
 ```
