@@ -214,25 +214,24 @@ Notification preferences per channel per event type (UI already built — wire i
 
 ---
 
-## 11. Premium Features & Monetization
+## 11. Pricing: 100% Free — No Monetization
 
-Free tier stays generous (the current app remains free forever):
+**Owner decision (firm): the entire platform is free. No subscriptions, no premium
+tiers, no ads, no paywalls. Every feature ships to every user.**
 
-| | Free | Pro ($4.99/mo or $14.99 tournament pass) |
-|---|------|-----|
-| Team builder, transfers, formation | ✅ | ✅ |
-| Live scores & points | ✅ (1-min delay) | ✅ real-time |
-| AI recommendations | 3/week | Unlimited |
-| xPts predictions | Top-50 players | Full pool + custom scenarios |
-| Leagues | Join unlimited, create 2 | Unlimited + cup mode + admin tools |
-| Multi-team | 2 teams | 10 teams |
-| Telegram bot | Daily digest | Real-time alerts |
-| Decision analyser | ❌ | ✅ |
-| Ad-free | Banner ads | ✅ No ads |
+This simplifies the build significantly:
+- ❌ No Stripe integration, no `subscriptions` table, no tier-gating middleware
+- ❌ No billing router, no checkout/portal screens
+- ✅ One code path for all users
 
-- Payments: **Stripe** (checkout + customer portal + webhooks). One-time "tournament pass" likely outsells subscription for a 6-week event.
-- Secondary: affiliate (sports streaming sign-ups), sponsored "player spotlight" slots clearly labeled.
-- **Do not** paywall anything that was free in v1 (goodwill + the user's own original instinct).
+### Cost control (since there's no revenue, keep running costs near zero)
+| Cost center | Strategy |
+|-------------|----------|
+| Database | Neon free tier (0.5GB) is enough for a personal/community deployment |
+| Redis | Upstash free tier (10k commands/day) + aggressive response caching |
+| Football data | football-data.org free tier as primary; API-Football cheap tier ($39/mo for the 6-week tournament) only if free tier proves too slow |
+| Claude API | Cache AI recommendations per (squad-hash, round) — popular squads share results; daily briefing generated once per squad-archetype, not per user; soft rate-limit of N AI calls/user/day purely for cost protection (not a paywall — limit applies equally to everyone) |
+| Hosting | Vercel hobby tier covers a personal deployment; upgrade only if usage demands |
 
 ---
 
@@ -284,14 +283,13 @@ leaderboard_mv   (materialized view: scope, user_id, rank, points)
 predictions      (user_id, fixture_id, home, away, settled, points)
 badges           (user_id, badge_id, earned_at)
 notifications    (user_id, type, channel, payload, sent_at, read_at)
-subscriptions    (user_id, stripe_customer, status, tier, period_end)
 ```
 
 ### API surface (tRPC routers)
 `auth` · `team` (CRUD, validate, publish) · `transfers` (window, basket, confirm) ·
 `players` (search, stats, compare, xPts) · `live` (fixtures, events SSE) ·
 `leagues` · `ai` (recommend, scout, briefing) · `sync` (link, import, diff, writeback) ·
-`notifications` (prefs, register-push) · `billing` (checkout, portal, webhook)
+`notifications` (prefs, register-push)
 
 ### Scalability notes
 - Tournament traffic is extremely spiky (lockout hours, match minutes). Serverless + Redis caching of hot reads (live points, leaderboards) handles this; pre-compute everything possible.
@@ -309,11 +307,10 @@ subscriptions    (user_id, stripe_customer, status, tier, period_end)
 | **P2 — FIFA sync (read)** | Team-ID import, scheduled re-sync, diff screen | 1 wk |
 | **P3 — Real leagues + notifications** | Leagues backend, leaderboard MVs, web push + Telegram bot, lockout reminders | 1–2 wks |
 | **P4 — AI layer** | Claude-powered advisor endpoints replacing heuristics, daily briefing, NL scout | 1 wk |
-| **P5 — Premium** | Stripe, tier gating, Pro features | 1 wk |
-| **P6 — FIFA sync (write)** | Token flow + write-back transfers/captain (behind feature flag) | 1 wk, high-risk |
-| **P7 — Polish** | Decision analyser, ownership trends, player compare, share-card image generation (Vercel OG), un-stub AR/draft or cut them | ongoing |
+| **P5 — FIFA sync (write)** | Token flow + write-back transfers/captain (behind feature flag) | 1 wk, high-risk |
+| **P6 — Polish** | Decision analyser, ownership trends, player compare, share-card image generation (Vercel OG), un-stub AR/draft or cut them | ongoing |
 
-P0–P3 = a real product. P4–P5 = a business. P6 = the moonshot differentiator.
+P0–P3 = a real product. P4 = the intelligence. P5 = the moonshot differentiator.
 
 ---
 
@@ -324,6 +321,7 @@ P0–P3 = a real product. P4–P5 = a business. P6 = the moonshot differentiator
 | FIFA changes/blocks endpoints | Isolated sync module + kill switch; mirror-mode always works |
 | FIFA ToS objection to write-back | Ship read-only first; write-back opt-in, clearly user-initiated |
 | Data provider lag/cost spike | Dual-provider abstraction layer |
-| 6-week event = short revenue window | Tournament pass pricing; reuse platform for Euro 2028 / WC 2030 (architecture is competition-agnostic: `rounds`, `fixtures` are generic) |
+| 6-week event = short lifespan | Architecture is competition-agnostic (`rounds`, `fixtures` are generic) — relaunch free for Euro 2028 / WC 2030 |
+| No revenue but real running costs | Free-tier infra everywhere (Neon, Upstash, Vercel hobby, football-data.org); aggressive caching on AI calls; only paid item if needed is ~$39/mo match data for 6 weeks |
 | Solo-dev scope creep | Phases are strictly ordered; P0–P1 before anything shiny |
 ```
