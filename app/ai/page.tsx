@@ -17,8 +17,32 @@ export default function AIPage() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [suggestion, setSuggestion] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [question, setQuestion] = useState("");
+  const [advice, setAdvice] = useState<string | null>(null);
+  const [adviceError, setAdviceError] = useState("");
+  const [advising, setAdvising] = useState(false);
+  const [aiConfigured, setAiConfigured] = useState(true);
 
   useEffect(() => { fetch("/players.json").then(r => r.json()).then(setPlayers); }, []);
+
+  const askAdvisor = async () => {
+    setAdvising(true); setAdviceError(""); setAdvice(null);
+    try {
+      const res = await fetch("/api/ai", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ squad, question }),
+      });
+      const data = await res.json();
+      if (data.configured === false) { setAiConfigured(false); return; }
+      if (data.error) { setAdviceError(data.error); return; }
+      setAdvice(data.advice);
+    } catch {
+      setAdviceError("Request failed — check your connection and retry.");
+    } finally {
+      setAdvising(false);
+    }
+  };
 
   const generateSuggestion = () => {
     setLoading(true);
@@ -49,6 +73,36 @@ export default function AIPage() {
         <Brain size={24} className="text-purple-200 mb-2" />
         <p className="text-white font-bold text-lg">AI Fantasy Tools</p>
         <p className="text-white/80 text-sm">Smart analysis powered by research from 48 nations</p>
+      </div>
+
+      {/* REAL Grove Street AI Advisor (Claude) */}
+      <div className="bg-slate-900 rounded-2xl p-4 border border-purple-500/40">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-lg">🟢</span>
+          <p className="text-white font-semibold">Grove Street AI Advisor</p>
+          <span className="ml-auto bg-purple-500/20 text-purple-300 text-[10px] px-2 py-0.5 rounded-full font-bold">REAL AI</span>
+        </div>
+        {!aiConfigured ? (
+          <p className="text-yellow-400 text-sm">AI not connected yet — add the ANTHROPIC_API_KEY env var (see SETUP_KEYS.md) to activate.</p>
+        ) : (
+          <>
+            <p className="text-slate-400 text-sm mb-3">Asks a real AI to analyze your actual 15-man squad. Try: "Who should I captain for MD2?" or "Plan my Round of 32 wildcard."</p>
+            <textarea value={question} onChange={(e) => setQuestion(e.target.value)} rows={2}
+              placeholder="Ask anything about your squad, transfers, captain..."
+              className="w-full bg-slate-800 text-white text-sm p-3 rounded-xl border border-slate-700 focus:outline-none focus:border-purple-500 resize-none" />
+            <button onClick={askAdvisor} disabled={advising}
+              className="w-full mt-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-2">
+              {advising ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Brain size={16} />}
+              {advising ? "Big Smoke is thinking..." : "Analyze My Squad"}
+            </button>
+            {adviceError && <p className="text-red-400 text-sm mt-2">{adviceError}</p>}
+            {advice && (
+              <div className="mt-3 p-3 bg-purple-500/10 border border-purple-500/30 rounded-xl">
+                <p className="text-white text-sm whitespace-pre-wrap leading-relaxed">{advice}</p>
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       {/* Smart Transfer Suggester */}
