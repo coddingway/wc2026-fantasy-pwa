@@ -127,13 +127,15 @@ export default function LeaguesPage() {
                   const t = getTeam(m.favoriteTeam);
                   const isMe = m.uid === phone;
                   return (
-                    <div key={m.uid} className={`flex items-center gap-2 p-2 rounded-xl ${isMe ? "bg-emerald-500/10 border border-emerald-500/30" : "bg-slate-800"}`}>
+                    <Link key={m.uid} href={`/leagues/${encodeURIComponent(m.uid)}`}
+                      className={`flex items-center gap-2 p-2 rounded-xl transition-all hover:border-emerald-500/50 border ${isMe ? "bg-emerald-500/10 border-emerald-500/30" : "bg-slate-800 border-transparent"}`}>
                       <span className={`font-black w-6 text-sm ${i === 0 ? "text-yellow-400" : i === 1 ? "text-slate-300" : i === 2 ? "text-orange-400" : "text-slate-500"}`}>#{i + 1}</span>
                       <span>{t?.flag ?? "⚽"}</span>
                       <p className="text-white text-sm flex-1 truncate">{m.teamName}{isMe && <span className="text-emerald-400 text-xs"> (you)</span>}</p>
                       {league.ownerUid === m.uid && <Crown size={12} className="text-yellow-400" />}
                       <p className="text-emerald-400 font-bold text-sm">{m.points}</p>
-                    </div>
+                      <span className="text-slate-500 text-xs">›</span>
+                    </Link>
                   );
                 })}
               </div>
