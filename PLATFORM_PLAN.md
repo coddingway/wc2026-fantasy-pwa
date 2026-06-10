@@ -406,4 +406,19 @@ Explicitly **not** in this plan, with reasons — so nothing is silently missing
 | Daily challenges | P6 candidate | Fun but needs the leagues backend first (P3) |
 | Historical WC fantasy database | Deferred | 2018/2022 fantasy data not publicly available |
 | Calendar (Google/Apple) integration | P6 candidate | Easy win post-launch; .ics export is trivial |
+| Player heatmap (world map) | P6 candidate | Nation-coverage map via react-simple-maps; pure UI once DB exists |
+| Scout report generator | P6 candidate | One-page player profile = player detail route + Vercel OG image; builds on §6 stats warehouse |
+| Fantasy bracket generator | P3 add-on | Knockout bracket visual with fantasy-asset overlay; data already in `fixtures`/`rounds` |
+| Squad template library | P3 add-on | Save/share/import squad templates = `teams` table + public share links (multi-team infra covers it) |
+| Live commentary overlay | Deferred | Second-screen event feed; §5 live events page covers 90% of the value |
+| Offline mode | Covered (clarify) | next-pwa service worker already caches the app shell; P1 adds explicit offline strategy: cached squad + read-only last-known data, queue mutations for reconnect |
+| Price change alerts | N/A by design | Official WC2026 rules fix all player prices for the whole tournament — feature is impossible/unneeded |
+| AI squad comparison | Folded into §7 | Compare-two-squads endpoint added to the AI router (same xPts engine, head-to-head output) |
+
+### 65-Idea Traceability Summary
+Every idea from the original list now has exactly one disposition:
+- **Built in app today:** 27 (incl. Phase 2: auto-builder, formation optimizer, deep-dive cards, multi-team, fixture ticker)
+- **Planned in §2–§12 / roadmap:** 22 (real data, sync, leagues, AI, notifications upgrades of built features count once)
+- **Deferred or cut with reason (this table):** 15
+- **N/A by official game rules:** 1 (price change alerts)
 ```
