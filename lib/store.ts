@@ -41,6 +41,8 @@ interface FantasyStore {
   earnBadge: (id: string) => void;
 
   // Settings
+  favoriteTeam: string | null;
+  setFavoriteTeam: (code: string) => void;
   teamName: string;
   setTeamName: (name: string) => void;
   notifications: boolean;
@@ -105,6 +107,8 @@ export const useFantasyStore = create<FantasyStore>()(
             : [...s.badges, { id, name: id, description: "", icon: "🏅", earned: true, earnedDate: new Date().toISOString() }],
         })),
 
+      favoriteTeam: null,
+      setFavoriteTeam: (favoriteTeam) => set({ favoriteTeam }),
       teamName: "Grove Street FC",
       setTeamName: (teamName) => set({ teamName }),
       notifications: true,

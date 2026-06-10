@@ -3,19 +3,23 @@ import { Trophy, UserCircle2, CloudOff } from "lucide-react";
 import Link from "next/link";
 import { useFantasyStore } from "@/lib/store";
 import { useAuth } from "@/lib/auth-context";
+import { getTeam } from "@/lib/themes";
 
 export default function TopBar() {
-  const { teamName, totalPoints } = useFantasyStore();
+  const { teamName, totalPoints, favoriteTeam } = useFantasyStore();
   const { user, enabled } = useAuth();
+  const team = getTeam(favoriteTeam);
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur border-b border-slate-800 h-16 flex items-center px-4 justify-between">
-      <div className="flex items-center gap-2">
-        <span className="text-2xl">⚽</span>
+      {/* Flag-colors strip — shows the selected nation's full flag palette */}
+      <div className="absolute bottom-0 left-0 right-0 h-0.5" style={{ background: "var(--flag-gradient)" }} />
+      <Link href="/team-select" className="flex items-center gap-2">
+        <span className="text-2xl">{team ? team.flag : "⚽"}</span>
         <div>
-          <p className="text-xs text-emerald-400 font-semibold">GROVE STREET FC</p>
+          <p className="text-xs text-emerald-400 font-semibold uppercase">{team ? team.name : "Grove Street FC"}</p>
           <p className="text-sm font-bold text-white truncate max-w-[140px]">{teamName}</p>
         </div>
-      </div>
+      </Link>
       <div className="flex items-center gap-2">
         <div className="flex items-center gap-1 bg-emerald-500/20 px-3 py-1 rounded-full">
           <Trophy size={14} className="text-emerald-400" />

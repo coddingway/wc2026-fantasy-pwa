@@ -9,7 +9,7 @@ import { useFantasyStore } from "@/lib/store";
 const SYNC_KEYS = [
   "squad", "budget", "totalBudget", "totalPoints", "roundPoints",
   "transfers", "freeTransfersRemaining", "boosters", "predictions",
-  "badges", "teamName", "notifications", "darkMode",
+  "badges", "teamName", "notifications", "darkMode", "favoriteTeam",
 ] as const;
 
 function pickState() {
