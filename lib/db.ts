@@ -1,4 +1,5 @@
 import { neon } from "@neondatabase/serverless";
+import crypto from "node:crypto";
 
 // Neon Postgres via Vercel Storage. DATABASE_URL is auto-injected when the
 // database is attached to the Vercel project.
@@ -35,6 +36,26 @@ export function ensureSchema(): Promise<void> {
       joined_at timestamptz NOT NULL DEFAULT now(),
       PRIMARY KEY (league_id, phone)
     )`;
+    await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS pin_hash text`;
   })();
   return ready;
+}
+
+// ---- PIN auth (4-digit, salted hash) ----
+
+export function hashPin(phone: string, pin: string): string {
+  return crypto.createHash("sha256").update(`${phone}:${pin}:gs2026`).digest("hex");
+}
+
+export type PinCheck = "ok" | "nopin" | "bad" | "missing";
+
+// missing = no account, nopin = legacy account without a PIN yet
+export async function verifyPin(phone: string, pin: string | null): Promise<PinCheck> {
+  if (!sql) return "missing";
+  await ensureSchema();
+  const rows = await sql`SELECT pin_hash FROM users WHERE phone = ${phone}`;
+  if (!rows.length) return "missing";
+  if (!rows[0].pin_hash) return "nopin";
+  if (!pin) return "bad";
+  return rows[0].pin_hash === hashPin(phone, pin) ? "ok" : "bad";
 }

@@ -1,4 +1,5 @@
 // Crew leagues — thin client over our Vercel API routes (Neon Postgres).
+import { getStoredPin } from "./auth-context";
 
 export interface LeagueDoc {
   id: string;
@@ -21,7 +22,7 @@ type Member = { teamName: string; favoriteTeam: string | null; points: number };
 async function post(body: Record<string, unknown>) {
   const res = await fetch("/api/leagues", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "x-pin": getStoredPin() ?? "" },
     body: JSON.stringify(body),
   });
   const data = await res.json();

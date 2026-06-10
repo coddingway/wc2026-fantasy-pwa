@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sql, dbConfigured, ensureSchema } from "@/lib/db";
+import { sql, dbConfigured, ensureSchema, verifyPin } from "@/lib/db";
 
 // Crew leagues. GET ?phone= -> my leagues + member standings.
 // POST {action: create|join|refresh, ...} -> mutations.
@@ -51,6 +51,12 @@ export async function POST(req: NextRequest) {
     const { action, phone, member } = body;
     if (!phone) return NextResponse.json({ error: "phone_required" }, { status: 400 });
     await ensureSchema();
+
+    // League mutations act as the user — require their PIN
+    const check = await verifyPin(phone, req.headers.get("x-pin"));
+    if (check === "bad" || check === "missing") {
+      return NextResponse.json({ error: "pin_required" }, { status: 401 });
+    }
 
     if (action === "create") {
       const { name, type } = body;

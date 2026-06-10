@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef } from "react";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth, getStoredPin } from "@/lib/auth-context";
 import { useFantasyStore, INITIAL_FANTASY_STATE } from "@/lib/store";
 
 // Per-phone cloud save via /api/user (Vercel + Neon Postgres).
@@ -34,10 +34,11 @@ export default function CloudSync() {
     fetch(url)
       .then((r) => r.json())
       .then((data) => {
-        if (data.state) {
+        const cloudState = data.state && Object.keys(data.state).length > 0 ? data.state : null;
+        if (cloudState) {
           // Returning user — cloud data wins
           const patch: Record<string, unknown> = {};
-          for (const k of SYNC_KEYS) if (k in data.state) patch[k] = data.state[k];
+          for (const k of SYNC_KEYS) if (k in cloudState) patch[k] = cloudState[k];
           useFantasyStore.setState(patch);
         } else {
           // BRAND-NEW number — fresh start. Wipe any leftover device state
@@ -48,7 +49,7 @@ export default function CloudSync() {
           if (data.configured) {
             fetch(url, {
               method: "PUT",
-              headers: { "Content-Type": "application/json" },
+              headers: { "Content-Type": "application/json", "x-pin": getStoredPin() ?? "" },
               body: JSON.stringify({ state: pickState() }),
             }).catch(() => {});
           }
@@ -71,7 +72,7 @@ export default function CloudSync() {
       timer.current = setTimeout(() => {
         fetch(`/api/user/${encodeURIComponent(phone)}`, {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", "x-pin": getStoredPin() ?? "" },
           body: JSON.stringify({ state: pickState() }),
         }).catch(() => {});
       }, 1500);

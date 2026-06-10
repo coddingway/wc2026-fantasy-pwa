@@ -1,45 +1,31 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth, normalizePhone } from "@/lib/auth-context";
+import { useAuth } from "@/lib/auth-context";
 import { useFantasyStore } from "@/lib/store";
-import { Phone, LogOut, Cloud, UserPlus, LogIn } from "lucide-react";
+import { Phone, LogOut, Cloud, UserPlus, LogIn, KeyRound } from "lucide-react";
 
 type Mode = "login" | "signup";
 
-// Does this number already have an account in the cloud?
-async function checkAccount(fullPhone: string): Promise<{ configured: boolean; exists: boolean; name: string | null }> {
-  try {
-    const r = await fetch(`/api/user/${encodeURIComponent(fullPhone)}`);
-    const d = await r.json();
-    return {
-      configured: d.configured !== false,
-      exists: Boolean(d.state),
-      name: d.state?.ownerName ?? null,
-    };
-  } catch {
-    return { configured: false, exists: false, name: null };
-  }
-}
-
 export default function LoginPage() {
-  const { phone, login, signOut } = useAuth();
+  const { phone, login, signup, signOut } = useAuth();
   const ownerName = useFantasyStore((s) => s.ownerName);
   const setOwnerName = useFantasyStore((s) => s.setOwnerName);
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("login");
   const [input, setInput] = useState("");
   const [name, setName] = useState("");
+  const [pin, setPin] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
 
-  const switchMode = (m: Mode) => { setMode(m); setError(""); };
+  const switchMode = (m: Mode) => { setMode(m); setError(""); setNotice(""); };
 
   const handleSubmit = async () => {
-    setError("");
-    const full = normalizePhone(input);
-    if (!full) {
-      setError("Enter a valid phone number (at least 10 digits).");
+    setError(""); setNotice("");
+    if (pin.length !== 4) {
+      setError("PIN must be exactly 4 digits.");
       return;
     }
     if (mode === "signup" && name.trim().length < 2) {
@@ -47,26 +33,30 @@ export default function LoginPage() {
       return;
     }
     setBusy(true);
-    const account = await checkAccount(full);
 
-    if (account.configured) {
-      if (mode === "login" && !account.exists) {
-        setBusy(false);
-        setError("This number isn't registered yet. Please Sign Up first.");
-        setMode("signup");
+    if (mode === "signup") {
+      const res = await signup(input, name.trim(), pin);
+      setBusy(false);
+      if (!res.ok) {
+        setError(res.error ?? "Signup failed.");
+        if (res.error?.includes("already has an account")) setMode("login");
         return;
       }
-      if (mode === "signup" && account.exists) {
-        setBusy(false);
-        setError(`This number already has an account${account.name ? ` (${account.name})` : ""}. Please use Login.`);
-        setMode("login");
-        return;
-      }
+      setOwnerName(name.trim());
+      router.push("/");
+      return;
     }
 
-    if (mode === "signup") setOwnerName(name.trim());
-    await login(input); // login mode: name auto-loads from the cloud
+    // Login
+    const res = await login(input, pin);
     setBusy(false);
+    if (!res.ok) {
+      setError(res.error ?? "Login failed.");
+      if (res.error?.includes("Sign Up first")) setMode("signup");
+      return;
+    }
+    if (res.name) setOwnerName(res.name); // name auto-detected from cloud
+    if (res.pinSet) setNotice("PIN saved — use it for every login from now on.");
     router.push("/");
   };
 
@@ -149,14 +139,38 @@ export default function LoginPage() {
           </p>
         </div>
 
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <KeyRound size={16} className="text-emerald-400" />
+            <p className="text-white font-semibold">4-Digit PIN</p>
+          </div>
+          <input
+            type="password" inputMode="numeric" maxLength={4} value={pin}
+            onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
+            onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+            placeholder="••••"
+            className="w-full bg-slate-800 text-white text-2xl text-center px-4 py-3 rounded-xl border border-slate-700 focus:outline-none focus:border-emerald-500 tracking-[0.5em] font-mono"
+          />
+          <p className="text-slate-500 text-xs mt-2">
+            {mode === "signup"
+              ? "Choose any 4 digits — this protects your team. Don't forget it!"
+              : "The PIN you chose at signup."}
+          </p>
+        </div>
+
         {error && (
           <div className="bg-red-500/10 border border-red-500/40 rounded-xl p-3">
             <p className="text-red-400 text-sm font-semibold">⚠️ {error}</p>
           </div>
         )}
+        {notice && (
+          <div className="bg-emerald-500/10 border border-emerald-500/40 rounded-xl p-3">
+            <p className="text-emerald-400 text-sm font-semibold">✅ {notice}</p>
+          </div>
+        )}
 
         <button onClick={handleSubmit}
-          disabled={busy || input.replace(/\D/g, "").length < 10 || (mode === "signup" && name.trim().length < 2)}
+          disabled={busy || input.replace(/\D/g, "").length < 10 || pin.length !== 4 || (mode === "signup" && name.trim().length < 2)}
           className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white font-bold py-3.5 rounded-xl transition-all">
           {busy ? "Checking..." : mode === "login" ? "Login" : "Create Account"}
         </button>
