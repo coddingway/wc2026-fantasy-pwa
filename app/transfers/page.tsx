@@ -1,16 +1,19 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useFantasyStore } from "@/lib/store";
-import { Player } from "@/lib/types";
-import { Search, ArrowRightLeft, AlertTriangle } from "lucide-react";
+import { Player, SquadPlayer } from "@/lib/types";
+import { Search, ArrowRightLeft, Plus, X } from "lucide-react";
 import { ROUNDS } from "@/lib/squad-data";
+import { nationOf, POSITION_QUOTA } from "@/lib/nations";
+import Link from "next/link";
 
 export default function TransfersPage() {
-  const { squad, freeTransfersRemaining, transfers } = useFantasyStore();
+  const { squad, freeTransfersRemaining, transfers, addPlayer, removePlayer } = useFantasyStore();
   const [players, setPlayers] = useState<Player[]>([]);
   const [search, setSearch] = useState("");
   const [posFilter, setPosFilter] = useState("ALL");
   const [selectedOut, setSelectedOut] = useState<number | null>(null);
+  const [buildError, setBuildError] = useState("");
 
   useEffect(() => {
     fetch("/players.json").then(r => r.json()).then(setPlayers);
@@ -26,6 +29,119 @@ export default function TransfersPage() {
     ((p.knownName || `${p.firstName} ${p.lastName}`).toLowerCase().includes(search.toLowerCase()))
   ).slice(0, 30);
 
+  const handleAdd = (p: Player) => {
+    const n = nationOf(p.squadId);
+    const sp: SquadPlayer = {
+      ...p, nation: n.code, flag: n.flag,
+      isStarting: false, isCaptain: false, isViceCaptain: false,
+    };
+    const err = addPlayer(sp);
+    setBuildError(err ?? "");
+  };
+
+  // ============ BUILD MODE — squad not complete yet ============
+  if (squad.length < 15) {
+    const posCounts = { GK: 0, DEF: 0, MID: 0, FWD: 0 } as Record<string, number>;
+    squad.forEach(p => posCounts[p.position]++);
+    return (
+      <div className="px-4 py-4 max-w-lg mx-auto space-y-4">
+        <div className="bg-gradient-to-r from-emerald-600 to-blue-600 rounded-2xl p-4">
+          <p className="text-white font-bold text-lg">Build Your Squad</p>
+          <p className="text-white/80 text-sm">Pick 15 players: 2 GK · 5 DEF · 5 MID · 3 FWD · max 3 per nation · $100M budget</p>
+          <div className="w-full bg-white/20 rounded-full h-2 mt-3">
+            <div className="bg-white rounded-full h-2 transition-all" style={{ width: `${(squad.length / 15) * 100}%` }} />
+          </div>
+          <p className="text-white/90 text-xs mt-1 font-bold">{squad.length}/15 players · ${remainingBudget.toFixed(1)}M left</p>
+        </div>
+
+        {/* Position quota tracker */}
+        <div className="grid grid-cols-4 gap-2">
+          {(["GK","DEF","MID","FWD"] as const).map(pos => (
+            <div key={pos} className={`text-center rounded-xl p-2 border ${posCounts[pos] >= POSITION_QUOTA[pos] ? "bg-emerald-500/10 border-emerald-500/40" : "bg-slate-900 border-slate-800"}`}>
+              <p className={`text-xs font-bold ${pos === "GK" ? "text-yellow-400" : pos === "DEF" ? "text-blue-400" : pos === "MID" ? "text-emerald-400" : "text-red-400"}`}>{pos}</p>
+              <p className="text-white font-black">{posCounts[pos]}/{POSITION_QUOTA[pos]}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Quick option */}
+        <Link href="/autobuilder" className="block bg-purple-600/20 border border-purple-500/40 rounded-xl p-3 text-center">
+          <p className="text-purple-300 text-sm font-bold">🪄 In a hurry? Let the Auto-Builder pick all 15 for you →</p>
+        </Link>
+
+        {buildError && (
+          <div className="bg-red-500/10 border border-red-500/40 rounded-xl p-3">
+            <p className="text-red-400 text-sm font-semibold">⚠️ {buildError}</p>
+          </div>
+        )}
+
+        {/* My picks so far */}
+        {squad.length > 0 && (
+          <div className="bg-slate-900 rounded-2xl p-4 border border-slate-800">
+            <p className="text-slate-400 text-xs font-semibold uppercase mb-3">Your Picks ({squad.length})</p>
+            <div className="space-y-1">
+              {squad.map(p => (
+                <div key={p.id} className="flex items-center gap-2 p-2 bg-slate-800 rounded-xl">
+                  <span>{p.flag}</span>
+                  <span className={`text-[9px] px-1 py-0.5 rounded font-bold ${p.position === "GK" ? "bg-yellow-500/20 text-yellow-400" : p.position === "DEF" ? "bg-blue-500/20 text-blue-400" : p.position === "MID" ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}`}>{p.position}</span>
+                  <span className="text-white text-sm flex-1 truncate">{p.knownName || `${p.firstName} ${p.lastName}`}</span>
+                  <span className="text-emerald-400 text-sm font-bold">${p.price}M</span>
+                  <button onClick={() => { removePlayer(p.id); setBuildError(""); }} className="p-1 rounded-lg bg-red-500/10 text-red-400">
+                    <X size={12} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Player pool */}
+        <div className="bg-slate-900 rounded-2xl p-4 border border-emerald-500/30">
+          <p className="text-slate-400 text-xs font-semibold uppercase mb-3">Player Pool — tap + to add</p>
+          <div className="flex gap-2 mb-3">
+            <div className="flex-1 relative">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input value={search} onChange={e => setSearch(e.target.value)}
+                placeholder="Search players..." className="w-full bg-slate-800 text-white text-sm pl-8 pr-3 py-2 rounded-xl border border-slate-700 focus:outline-none focus:border-emerald-500" />
+            </div>
+            <select value={posFilter} onChange={e => setPosFilter(e.target.value)}
+              className="bg-slate-800 text-white text-sm px-3 py-2 rounded-xl border border-slate-700">
+              {["ALL","GK","DEF","MID","FWD"].map(p => <option key={p}>{p}</option>)}
+            </select>
+          </div>
+          <div className="space-y-2 max-h-96 overflow-y-auto">
+            {filtered.map(p => {
+              const n = nationOf(p.squadId);
+              const inSquad = squad.some(s => s.id === p.id);
+              return (
+                <div key={p.id} className={`flex items-center justify-between p-2 rounded-xl ${inSquad ? "bg-emerald-500/10 border border-emerald-500/30" : "bg-slate-800"}`}>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span>{n.flag}</span>
+                    <div className="min-w-0">
+                      <p className="text-white text-sm truncate">{p.knownName || `${p.firstName} ${p.lastName}`}</p>
+                      <p className="text-slate-400 text-xs">{p.position} · {n.code} · {p.percentSelected}% owned</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className="text-emerald-400 text-sm font-bold">${p.price}M</span>
+                    {inSquad ? (
+                      <span className="text-emerald-400 text-xs font-bold">✓</span>
+                    ) : (
+                      <button onClick={() => handleAdd(p)} className="bg-emerald-600 hover:bg-emerald-700 text-white p-1.5 rounded-lg">
+                        <Plus size={14} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ============ TRANSFER MODE — squad complete ============
   return (
     <div className="px-4 py-4 max-w-lg mx-auto space-y-4">
       {/* Transfer Window Banner */}

@@ -96,7 +96,7 @@ export default function MorePage() {
         <p className="text-3xl mb-2">⚽</p>
         <p className="text-white font-bold">WC2026 Fantasy Hub</p>
         <p className="text-slate-400 text-xs">v1.0.0 · Grove Street FC Edition</p>
-        <p className="text-slate-500 text-xs mt-1">15 nations · 65 features · 1,481 players</p>
+        <p className="text-slate-500 text-xs mt-1">48 nations · 1,481 players · more coming</p>
         <p className="text-emerald-400 text-xs font-semibold mt-2">Grove Street for life 🟢</p>
       </div>
     </div>

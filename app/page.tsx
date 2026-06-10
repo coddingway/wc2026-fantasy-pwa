@@ -45,6 +45,27 @@ export default function Dashboard() {
     <div className="px-4 py-4 space-y-5 max-w-lg mx-auto">
       {/* Fixture Ticker */}
       <FixtureTicker />
+
+      {/* New user onboarding — no squad yet */}
+      {squad.length === 0 && (
+        <div className="bg-gradient-to-br from-emerald-600 to-blue-700 rounded-2xl p-5">
+          <p className="text-3xl mb-2">👋</p>
+          <p className="text-white font-black text-xl">Set Up Your Team!</p>
+          <p className="text-white/80 text-sm mt-1 mb-4">
+            You don't have a squad yet. Pick 15 players within $100M —
+            build it yourself or let the Auto-Builder do it in one tap.
+          </p>
+          <div className="flex gap-2">
+            <Link href="/transfers" className="flex-1 bg-white text-emerald-700 font-black py-3 rounded-xl text-center text-sm">
+              ⚽ Pick My Players
+            </Link>
+            <Link href="/autobuilder" className="flex-1 bg-black/30 text-white font-black py-3 rounded-xl text-center text-sm">
+              🪄 Auto-Build
+            </Link>
+          </div>
+        </div>
+      )}
+
       {/* Hero Stats */}
       <div className="grid grid-cols-2 gap-3">
         {[
@@ -62,6 +83,7 @@ export default function Dashboard() {
       </div>
 
       {/* Captain & VC */}
+      {squad.length > 0 && (
       <div className="bg-slate-900 rounded-2xl p-4 border border-slate-800">
         <p className="text-slate-400 text-xs font-semibold uppercase mb-3">Captain & Vice-Captain</p>
         <div className="flex gap-3">
@@ -76,6 +98,7 @@ export default function Dashboard() {
         </div>
         <Link href="/captain" className="block mt-3 text-center text-emerald-400 text-sm font-semibold">Change Captain →</Link>
       </div>
+      )}
 
       {/* Booster Status */}
       <div className="bg-slate-900 rounded-2xl p-4 border border-slate-800">
@@ -100,7 +123,7 @@ export default function Dashboard() {
 
       {/* All Features Grid */}
       <div>
-        <p className="text-slate-400 text-xs font-semibold uppercase mb-3">All Features (65 tools)</p>
+        <p className="text-slate-400 text-xs font-semibold uppercase mb-3">All Features</p>
         <div className="grid grid-cols-3 gap-2">
           {QUICK_LINKS.map(({ href, icon, label, desc }) => (
             <Link key={href} href={href} className="bg-slate-900 border border-slate-800 hover:border-emerald-500/50 rounded-xl p-3 text-center transition-all active:scale-95">

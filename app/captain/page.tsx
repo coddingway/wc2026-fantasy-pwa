@@ -47,6 +47,17 @@ export default function CaptainPage() {
     d === "medium" ? "text-yellow-400 bg-yellow-500/10" :
     "text-red-400 bg-red-500/10";
 
+  if (starters.length === 0) {
+    return (
+      <div className="px-4 py-16 max-w-lg mx-auto text-center space-y-4">
+        <p className="text-5xl">🎖️</p>
+        <p className="text-white font-bold text-xl">No Captain Without a Squad</p>
+        <p className="text-slate-400 text-sm">Build your team first, then come pick who wears the armband.</p>
+        <a href="/transfers" className="inline-block bg-emerald-600 text-white font-bold px-8 py-3 rounded-xl">⚽ Build My Squad</a>
+      </div>
+    );
+  }
+
   return (
     <div className="px-4 py-4 max-w-lg mx-auto space-y-4">
       <div className="bg-gradient-to-r from-yellow-600 to-orange-600 rounded-2xl p-4">

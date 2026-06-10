@@ -1,5 +1,6 @@
 "use client";
 import { createContext, useContext, useEffect, useState } from "react";
+import { useFantasyStore, INITIAL_FANTASY_STATE } from "./store";
 
 // Simple phone-number identity. The number IS the account key.
 // Data: localStorage (zustand persist) + Vercel/Neon cloud via CloudSync.
@@ -49,6 +50,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = () => {
     localStorage.removeItem(STORAGE_KEY);
     setPhone(null);
+    // Wipe device state so the next number starts clean (their cloud
+    // data reloads when they log in)
+    useFantasyStore.setState({ ...INITIAL_FANTASY_STATE });
   };
 
   return (

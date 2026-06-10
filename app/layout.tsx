@@ -11,7 +11,7 @@ const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "WC2026 Fantasy Hub | Grove Street FC",
-  description: "FIFA World Cup 2026 Fantasy Manager — 65 features, 15 nations, Grove Street edition",
+  description: "FIFA World Cup 2026 Fantasy Manager — build your squad, join crew leagues, follow live scores.",
   manifest: "/manifest.json",
   appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "GS Fantasy" },
   icons: {

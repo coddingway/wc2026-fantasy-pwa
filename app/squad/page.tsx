@@ -56,6 +56,20 @@ export default function SquadPage() {
     </button>
   );
 
+  if (squad.length === 0) {
+    return (
+      <div className="px-4 py-16 max-w-lg mx-auto text-center space-y-4">
+        <p className="text-5xl">🏟️</p>
+        <p className="text-white font-bold text-xl">No Squad Yet</p>
+        <p className="text-slate-400 text-sm">Build your 15-man team first — then manage it here on the pitch.</p>
+        <div className="flex gap-2 justify-center">
+          <a href="/transfers" className="bg-emerald-600 text-white font-bold px-6 py-3 rounded-xl text-sm">⚽ Pick Players</a>
+          <a href="/autobuilder" className="bg-slate-800 text-white font-bold px-6 py-3 rounded-xl text-sm">🪄 Auto-Build</a>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="px-4 py-4 max-w-lg mx-auto">
       {/* Stats Bar */}
