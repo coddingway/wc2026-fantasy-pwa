@@ -14,6 +14,7 @@ const nav = [
 
 export default function BottomNav() {
   const path = usePathname();
+  if (path === "/login") return null; // no navbar on the signup/login screen
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 bg-slate-900/95 backdrop-blur border-t border-slate-800 h-20 flex items-center">
       {nav.map(({ href, icon: Icon, label }) => {
