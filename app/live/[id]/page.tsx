@@ -164,7 +164,7 @@ export default function MatchDetailPage({ params }: { params: Promise<{ id: stri
               <div key={i} className="flex items-center gap-3">
                 <Flag size={14} className="text-slate-500" />
                 <p className="text-white text-sm flex-1">{r.name}</p>
-                <span className="text-slate-400 text-xs capitalize">{r.role.toLowerCase().replace(/_/g, " ")}</span>
+                <span className="text-slate-400 text-xs capitalize">{(r.role ?? "").toLowerCase().replace(/_/g, " ")}</span>
               </div>
             ))}
           </div>

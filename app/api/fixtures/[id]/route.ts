@@ -46,7 +46,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
         full: m.score?.fullTime ?? { home: null, away: null },
         half: m.score?.halfTime ?? { home: null, away: null },
       },
-      referees: (m.referees ?? []).map((r: any) => ({ name: r.name, role: r.role, nationality: r.nationality })),
+      referees: (m.referees ?? []).map((r: any) => ({ name: r.name ?? "", role: r.type ?? r.role ?? "", nationality: r.nationality ?? "" })),
     });
   } catch {
     return NextResponse.json({ configured: true, error: "fetch_failed" }, { status: 502 });
