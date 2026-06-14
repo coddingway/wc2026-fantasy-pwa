@@ -1,7 +1,8 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { useFantasyStore } from "@/lib/store";
-import { Zap, Lock, CheckCircle, Clock, RefreshCw, WifiOff } from "lucide-react";
+import { Zap, Lock, CheckCircle, Clock, RefreshCw, WifiOff, ChevronRight } from "lucide-react";
 import type { ApiMatch } from "@/app/api/fixtures/route";
 
 const dayKey = (iso: string) => new Date(iso).toDateString();
@@ -51,7 +52,7 @@ export default function LivePage() {
     const isLive = m.status === "IN_PLAY" || m.status === "PAUSED";
     const done = m.status === "FINISHED";
     return (
-      <div className={`p-3 rounded-xl border ${isLive ? "border-red-500/50 bg-red-500/5" : "border-slate-700 bg-slate-800"}`}>
+      <Link href={`/live/${m.id}`} className={`block p-3 rounded-xl border transition-all active:scale-[0.98] ${isLive ? "border-red-500/50 bg-red-500/5 hover:border-red-500" : "border-slate-700 bg-slate-800 hover:border-slate-600"}`}>
         <div className="flex items-center justify-between gap-2">
           <span className="text-white text-sm flex-1 text-right truncate">{m.home.name}</span>
           <div className="text-center min-w-[70px]">
@@ -67,13 +68,14 @@ export default function LivePage() {
             )}
           </div>
           <span className="text-white text-sm flex-1 truncate">{m.away.name}</span>
+          <ChevronRight size={14} className="text-slate-600 flex-shrink-0" />
         </div>
         <div className="flex justify-center gap-2 mt-1">
           {m.group && <span className="text-slate-500 text-[10px]">{m.group}</span>}
           {isLive && <span className="bg-red-500/20 text-red-400 text-[10px] px-2 py-0.5 rounded-full font-bold animate-pulse">LIVE</span>}
-          {done && <span className="text-slate-500 text-[10px]">FT</span>}
+          {done && <span className="text-slate-500 text-[10px]">FT · tap for details</span>}
         </div>
-      </div>
+      </Link>
     );
   };
 

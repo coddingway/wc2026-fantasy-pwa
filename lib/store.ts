@@ -12,6 +12,7 @@ export const INITIAL_FANTASY_STATE = {
   totalBudget: BUDGET,
   totalPoints: 0,
   roundPoints: {} as Record<string, number>,
+  playerPoints: {} as Record<number, number>,
   transfers: [] as Transfer[],
   freeTransfersRemaining: 2,
   boosters: BOOSTERS.map((b) => ({ ...b, used: false })),
@@ -45,7 +46,9 @@ interface FantasyStore {
   // Points
   totalPoints: number;
   roundPoints: Record<string, number>;
+  playerPoints: Record<number, number>;
   addRoundPoints: (round: string, pts: number) => void;
+  setComputedPoints: (total: number, byRound: Record<string, number>, perPlayer: Record<number, number>) => void;
 
   // Transfers
   transfers: Transfer[];
@@ -135,11 +138,14 @@ export const useFantasyStore = create<FantasyStore>()(
 
       totalPoints: 0,
       roundPoints: {},
+      playerPoints: {},
       addRoundPoints: (round, pts) =>
         set((s) => ({
           totalPoints: s.totalPoints + pts,
           roundPoints: { ...s.roundPoints, [round]: pts },
         })),
+      setComputedPoints: (totalPoints, roundPoints, playerPoints) =>
+        set({ totalPoints, roundPoints, playerPoints }),
 
       transfers: [],
       addTransfer: (t) => set((s) => ({ transfers: [...s.transfers, t] })),

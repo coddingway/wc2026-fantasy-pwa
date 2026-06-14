@@ -8,7 +8,7 @@ import { useFantasyStore, INITIAL_FANTASY_STATE } from "@/lib/store";
 // local progress up. After that: localStorage (zustand) + debounced cloud PUT.
 
 const SYNC_KEYS = [
-  "squad", "budget", "totalBudget", "totalPoints", "roundPoints",
+  "squad", "budget", "totalBudget", "totalPoints", "roundPoints", "playerPoints",
   "transfers", "freeTransfersRemaining", "boosters", "predictions",
   "badges", "teamName", "notifications", "darkMode", "favoriteTeam", "ownerName",
 ] as const;

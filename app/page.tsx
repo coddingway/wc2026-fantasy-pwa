@@ -3,6 +3,7 @@ import { useFantasyStore } from "@/lib/store";
 import { Trophy, Globe, Zap, Calendar } from "lucide-react";
 import Link from "next/link";
 import FixtureTicker from "@/components/ui/FixtureTicker";
+import { usePointsSync } from "@/lib/use-points";
 
 const TRANSFER_WINDOWS = [
   { date: "Jun 17", label: "MD2 Window", transfers: "2 free" },
@@ -35,11 +36,13 @@ const QUICK_LINKS = [
 ];
 
 export default function Dashboard() {
-  const { squad, totalPoints, budget, freeTransfersRemaining, boosters } = useFantasyStore();
+  const { squad, totalPoints, roundPoints, budget, freeTransfersRemaining, boosters } = useFantasyStore();
+  const { loading: pointsLoading, configured: pointsConfigured, finishedCount } = usePointsSync();
   const captain = squad.find((p) => p.isCaptain);
   const vc = squad.find((p) => p.isViceCaptain);
   const nations = new Set(squad.map((p) => p.nation)).size;
   const unusedBoosters = boosters.filter((b) => !b.used).length;
+  const rounds = Object.entries(roundPoints).sort();
 
   return (
     <div className="px-4 py-4 space-y-5 max-w-lg mx-auto">
@@ -98,6 +101,41 @@ export default function Dashboard() {
         </div>
         <Link href="/captain" className="block mt-3 text-center text-emerald-400 text-sm font-semibold">Change Captain →</Link>
       </div>
+      )}
+
+      {/* Gameweek Points */}
+      {squad.length > 0 && (
+        <div className="bg-slate-900 rounded-2xl p-4 border border-slate-800">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-slate-400 text-xs font-semibold uppercase">Your Fantasy Points</p>
+            {pointsLoading && <div className="w-3 h-3 border-2 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin" />}
+          </div>
+          {!pointsConfigured ? (
+            <p className="text-slate-500 text-sm">Live points need the football data key.</p>
+          ) : finishedCount === 0 ? (
+            <p className="text-slate-500 text-sm">No matches finished yet — points appear after kickoff.</p>
+          ) : (
+            <>
+              <div className="flex items-end gap-2 mb-3">
+                <p className="text-emerald-400 font-black text-4xl">{totalPoints}</p>
+                <p className="text-slate-400 text-sm mb-1">pts · {finishedCount} matches played</p>
+              </div>
+              {rounds.length > 0 && (
+                <div className="grid grid-cols-4 gap-2">
+                  {rounds.map(([r, p]) => (
+                    <div key={r} className="bg-slate-800 rounded-xl p-2 text-center">
+                      <p className="text-slate-400 text-[10px] uppercase">{r}</p>
+                      <p className="text-emerald-400 font-black">{p}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <p className="text-slate-600 text-[10px] mt-2">
+                ℹ️ Estimated from official goals + results. Exact minutes/cards aren't in the free data feed.
+              </p>
+            </>
+          )}
+        </div>
       )}
 
       {/* Booster Status */}

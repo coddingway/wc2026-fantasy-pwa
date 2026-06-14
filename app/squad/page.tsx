@@ -2,6 +2,7 @@
 import { useFantasyStore } from "@/lib/store";
 import { useState } from "react";
 import { Crown, Shield } from "lucide-react";
+import { usePointsSync } from "@/lib/use-points";
 
 const FORMATION_ROWS = {
   GK: ["GK"],
@@ -11,7 +12,8 @@ const FORMATION_ROWS = {
 };
 
 export default function SquadPage() {
-  const { squad, setCaptain, setViceCaptain, swapStartingBench } = useFantasyStore();
+  const { squad, playerPoints, totalPoints, setCaptain, setViceCaptain, swapStartingBench } = useFantasyStore();
+  usePointsSync();
   const [selected, setSelected] = useState<number | null>(null);
   const starters = squad.filter((p) => p.isStarting);
   const bench = squad.filter((p) => !p.isStarting);
@@ -34,6 +36,10 @@ export default function SquadPage() {
         </div>
         {player.isCaptain && <span className="absolute -top-1 -right-1 bg-yellow-400 text-black text-[8px] font-black rounded-full w-4 h-4 flex items-center justify-center">C</span>}
         {player.isViceCaptain && <span className="absolute -top-1 -right-1 bg-slate-400 text-black text-[8px] font-black rounded-full w-4 h-4 flex items-center justify-center">V</span>}
+        {/* Live points badge */}
+        <span className="absolute -bottom-1 -right-1 bg-emerald-500 text-white text-[8px] font-black rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center border border-slate-900">
+          {playerPoints[player.id] ?? 0}
+        </span>
       </div>
       <p className="text-white text-[10px] font-bold text-center leading-tight max-w-[64px] truncate">
         {player.knownName?.split(" ").pop() || player.lastName}
@@ -74,10 +80,10 @@ export default function SquadPage() {
     <div className="px-4 py-4 max-w-lg mx-auto">
       {/* Stats Bar */}
       <div className="flex justify-between items-center mb-4 bg-slate-900 rounded-xl p-3 border border-slate-800">
-        <div className="text-center"><p className="text-emerald-400 font-bold">${totalCost.toFixed(1)}M</p><p className="text-slate-500 text-xs">Budget</p></div>
+        <div className="text-center"><p className="text-emerald-400 font-bold">{totalPoints}</p><p className="text-slate-500 text-xs">Points</p></div>
+        <div className="text-center"><p className="text-white font-bold">${totalCost.toFixed(1)}M</p><p className="text-slate-500 text-xs">Budget</p></div>
         <div className="text-center"><p className="text-blue-400 font-bold">{nations}</p><p className="text-slate-500 text-xs">Nations</p></div>
         <div className="text-center"><p className="text-purple-400 font-bold">{starters.length}/11</p><p className="text-slate-500 text-xs">Starters</p></div>
-        <div className="text-center"><p className="text-orange-400 font-bold">4-4-2</p><p className="text-slate-500 text-xs">Formation</p></div>
       </div>
 
       {/* Pitch */}
