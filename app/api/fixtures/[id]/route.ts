@@ -1,6 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
+import { sql, ensureSchema } from "@/lib/db";
 
 export const revalidate = 60;
+
+async function timelineFor(homeTla?: string, awayTla?: string) {
+  if (!sql || !homeTla || !awayTla) return [];
+  try {
+    await ensureSchema();
+    const rows = await sql`SELECT events FROM match_cache
+      WHERE (home_code = ${homeTla} AND away_code = ${awayTla})
+         OR (home_code = ${awayTla} AND away_code = ${homeTla}) LIMIT 1`;
+    return (rows[0]?.events ?? []) as any[];
+  } catch { return []; }
+}
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -15,9 +27,11 @@ export async function GET(_req: NextRequest, { params }: Params) {
     });
     if (!res.ok) return NextResponse.json({ configured: true, error: `upstream_${res.status}` }, { status: 502 });
     const m = await res.json();
+    const timeline = await timelineFor(m.homeTeam?.tla, m.awayTeam?.tla);
     return NextResponse.json({
       configured: true,
       id: m.id,
+      timeline,
       status: m.status,
       minute: m.minute ?? null,
       utcDate: m.utcDate,

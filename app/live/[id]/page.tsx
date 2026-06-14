@@ -1,8 +1,13 @@
 "use client";
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
-import { ArrowLeft, MapPin, Calendar, Flag, Clock, Trophy } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, Flag, Clock, Trophy, Goal, Square, RefreshCw } from "lucide-react";
 
+interface TimelineEvent {
+  type: "goal" | "yellow" | "red";
+  player: string; assist: string | null; code: string | null;
+  minute: number; penalty: boolean; ownGoal: boolean;
+}
 interface MatchDetail {
   configured: boolean;
   status?: string;
@@ -16,6 +21,7 @@ interface MatchDetail {
   away?: { name: string; tla: string; crest: string };
   score?: { winner: string | null; full: { home: number | null; away: number | null }; half: { home: number | null; away: number | null } };
   referees?: { name: string; role: string; nationality: string }[];
+  timeline?: TimelineEvent[];
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -93,6 +99,33 @@ export default function MatchDetailPage({ params }: { params: Promise<{ id: stri
         </div>
       </div>
 
+      {/* Goal & card timeline */}
+      {m.timeline && m.timeline.length > 0 && (
+        <div className="bg-slate-900 rounded-2xl p-4 border border-slate-800">
+          <p className="text-slate-400 text-xs font-semibold uppercase mb-3">Match Events</p>
+          <div className="space-y-2">
+            {[...m.timeline].sort((a, b) => a.minute - b.minute).map((ev, i) => {
+              const onHome = ev.code === m.home?.tla;
+              const icon = ev.type === "goal" ? "⚽" : ev.type === "red" ? "🟥" : "🟨";
+              return (
+                <div key={i} className={`flex items-center gap-2 ${onHome ? "" : "flex-row-reverse text-right"}`}>
+                  <span className="text-slate-500 text-xs font-mono w-8">{ev.minute}'</span>
+                  <span className="text-base">{icon}</span>
+                  <div className={onHome ? "" : "flex flex-col items-end"}>
+                    <p className="text-white text-sm">
+                      {ev.player}
+                      {ev.penalty && <span className="text-slate-400 text-xs"> (pen)</span>}
+                      {ev.ownGoal && <span className="text-red-400 text-xs"> (OG)</span>}
+                    </p>
+                    {ev.assist && <p className="text-slate-500 text-xs">assist: {ev.assist}</p>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Match info */}
       <div className="bg-slate-900 rounded-2xl p-4 border border-slate-800 space-y-3">
         <p className="text-slate-400 text-xs font-semibold uppercase">Match Info</p>
@@ -141,8 +174,8 @@ export default function MatchDetailPage({ params }: { params: Promise<{ id: stri
       {/* Data note */}
       <div className="bg-slate-900/60 rounded-2xl p-4 border border-slate-800">
         <p className="text-slate-500 text-xs">
-          ℹ️ Goal-by-goal timelines, lineups & player stats need a premium data feed.
-          Scores, results and your fantasy points update automatically from the official feed.
+          ℹ️ Goals, assists & cards feed your fantasy points automatically.
+          Full lineups & per-player stats (saves/tackles) need a premium feed.
         </p>
       </div>
     </div>

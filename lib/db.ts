@@ -37,6 +37,15 @@ export function ensureSchema(): Promise<void> {
       PRIMARY KEY (league_id, phone)
     )`;
     await sql`ALTER TABLE users ADD COLUMN IF NOT EXISTS pin_hash text`;
+    // Per-match player events cached from TheSportsDB (fetch-once, store forever)
+    await sql`CREATE TABLE IF NOT EXISTS match_cache (
+      event_id text PRIMARY KEY,
+      home_code text, away_code text,
+      home_score int, away_score int,
+      status text,
+      events jsonb NOT NULL DEFAULT '[]'::jsonb,
+      synced_at timestamptz NOT NULL DEFAULT now()
+    )`;
   })();
   return ready;
 }

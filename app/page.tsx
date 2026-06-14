@@ -131,7 +131,7 @@ export default function Dashboard() {
                 </div>
               )}
               <p className="text-slate-600 text-[10px] mt-2">
-                ℹ️ Estimated from official goals + results. Exact minutes/cards aren't in the free data feed.
+                ℹ️ Goals, assists, cards & clean sheets counted from live match data.
               </p>
             </>
           )}

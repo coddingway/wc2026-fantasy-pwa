@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { computePoints, FinishedMatch, ScorerLine, SquadLite } from "@/lib/points-engine";
+import { syncResults, getPlayerAggregates } from "@/lib/results-sync";
 
 export const revalidate = 300; // 5 min cache on upstream
 
@@ -22,9 +23,12 @@ export async function POST(req: NextRequest) {
     const { squad } = await req.json();
     if (!Array.isArray(squad)) return NextResponse.json({ error: "squad_required" }, { status: 400 });
 
-    const [matchesData, scorersData] = await Promise.all([
+    // Refresh TheSportsDB cache (throttled, fetch-once per match) then read aggregates
+    await syncResults().catch(() => {});
+    const [matchesData, scorersData, aggs] = await Promise.all([
       fetchFootball("competitions/WC/matches?status=FINISHED"),
       fetchFootball("competitions/WC/scorers?limit=100"),
+      getPlayerAggregates().catch(() => []),
     ]);
 
     const finished: FinishedMatch[] = (matchesData?.matches ?? [])
@@ -51,8 +55,8 @@ export async function POST(req: NextRequest) {
       isCaptain: !!p.isCaptain, isViceCaptain: !!p.isViceCaptain,
     }));
 
-    const result = computePoints(squadLite, finished, scorers);
-    return NextResponse.json({ configured: true, finishedCount: finished.length, ...result });
+    const result = computePoints(squadLite, finished, scorers, aggs);
+    return NextResponse.json({ configured: true, finishedCount: finished.length, detailedMatches: aggs.length > 0, ...result });
   } catch {
     return NextResponse.json({ error: "compute_failed", total: 0, perPlayer: {}, byRound: {} }, { status: 500 });
   }
