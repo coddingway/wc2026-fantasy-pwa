@@ -1,6 +1,6 @@
 "use client";
 import { useFantasyStore } from "@/lib/store";
-import { Bell, Moon, User, Smartphone, Globe, Zap, MessageCircle, ChevronRight } from "lucide-react";
+import { Bell, Moon, User, Smartphone, Globe, Zap, MessageCircle, ChevronRight, Code2 } from "lucide-react";
 import Link from "next/link";
 
 const MORE_SECTIONS = [
@@ -18,6 +18,12 @@ const MORE_SECTIONS = [
       { href: "/ar", icon: Smartphone, label: "AR Pitch View", desc: "See your squad in AR" },
       { href: "/bot", icon: MessageCircle, label: "Telegram Bot", desc: "Daily briefings via message" },
       { href: "/draft", icon: Globe, label: "Fantasy Draft", desc: "Draft mode with friends" },
+    ]
+  },
+  {
+    title: "About",
+    items: [
+      { href: "/developer", icon: Code2, label: "Developer Credit", desc: "Who & what built this app" },
     ]
   },
 ];
