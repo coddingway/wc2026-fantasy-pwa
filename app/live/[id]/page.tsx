@@ -188,6 +188,20 @@ export default function MatchDetailPage({ params }: { params: Promise<{ id: stri
         </div>
       )}
 
+      {/* No detail yet for finished matches */}
+      {finished && tl.length === 0 && (
+        <div className="bg-slate-900 rounded-2xl p-4 border border-yellow-500/30 flex gap-3">
+          <span className="text-xl">⏳</span>
+          <div>
+            <p className="text-yellow-400 text-sm font-semibold">Goal & card details coming soon</p>
+            <p className="text-slate-400 text-xs mt-1">
+              The final score is confirmed, but this match's goal-by-goal breakdown
+              hasn't been published yet. It appears automatically once the data feed updates.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Goal & card timeline */}
       {tl.length > 0 && (
         <div className="bg-slate-900 rounded-2xl p-4 border border-slate-800">
