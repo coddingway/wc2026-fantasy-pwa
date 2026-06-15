@@ -19,55 +19,75 @@ export interface CachedEvent {
 }
 
 let lastSync = 0;
-const SYNC_THROTTLE = 5 * 60 * 1000;
+const SYNC_THROTTLE = 8 * 60 * 1000;
+const WC_START = Date.UTC(2026, 5, 11); // 11 June 2026
 
-export async function syncResults(force = false): Promise<void> {
+const FINISHED = new Set(["FT", "Match Finished", "AET", "FT/AET", "PEN", "AP"]);
+
+function datesToScan(full: boolean): string[] {
+  const today = Date.now();
+  const start = full ? WC_START : Math.max(WC_START, today - 3 * 86400000);
+  const out: string[] = [];
+  for (let t = start; t <= today + 86400000; t += 86400000) {
+    out.push(new Date(t).toISOString().slice(0, 10));
+    if (out.length > 50) break;
+  }
+  return out;
+}
+
+function parseTimeline(tl: any[]): CachedEvent[] {
+  const parsed: CachedEvent[] = [];
+  for (const t of tl) {
+    const code = t.strTeam ? codeFromName(t.strTeam) : null;
+    const minute = parseInt(t.intTime) || 0;
+    const kind = String(t.strTimeline ?? "").toLowerCase();
+    const detail = String(t.strTimelineDetail ?? "").toLowerCase();
+    if (kind === "goal") {
+      parsed.push({ type: "goal", player: t.strPlayer ?? "", assist: t.strAssist || null, code, minute, penalty: detail.includes("pen"), ownGoal: detail.includes("own") });
+    } else if (kind === "card") {
+      parsed.push({ type: detail.includes("red") ? "red" : "yellow", player: t.strPlayer ?? "", assist: null, code, minute, penalty: false, ownGoal: false });
+    }
+  }
+  return parsed;
+}
+
+export async function syncResults(force = false, full = false): Promise<void> {
   if (!sql) return;
   if (!force && Date.now() - lastSync < SYNC_THROTTLE) return;
   lastSync = Date.now();
   await ensureSchema();
 
-  let data: any;
-  try {
-    const res = await fetch(tsdb(`eventsseason.php?id=${WC_LEAGUE}&s=2026`), { next: { revalidate: 300 } });
-    data = await res.json();
-  } catch { return; }
-  const events = data?.events ?? [];
+  const cachedRows = await sql`SELECT event_id FROM match_cache`;
+  const cached = new Set(cachedRows.map((r) => String(r.event_id)));
 
-  for (const e of events) {
-    const status = e.strStatus ?? e.strProgress ?? "";
-    const finished = status === "FT" || status === "Match Finished" || status === "AET" || status === "FT/AET";
-    if (!finished) continue;
-    const id = String(e.idEvent);
-
-    const existing = await sql`SELECT event_id FROM match_cache WHERE event_id = ${id}`;
-    if (existing.length) continue; // fetch-once
-
-    let tl: any[] = [];
+  for (const date of datesToScan(full)) {
+    let events: any[] = [];
     try {
-      const r = await fetch(tsdb(`lookuptimeline.php?id=${id}`));
+      const r = await fetch(tsdb(`eventsday.php?d=${date}&l=${WC_LEAGUE}`), { next: { revalidate: 300 } });
       const j = await r.json();
-      tl = j?.timeline ?? [];
-    } catch { /* keep score-only */ }
+      events = j?.events ?? [];
+    } catch { continue; }
+    if (!Array.isArray(events)) continue;
 
-    const parsed: CachedEvent[] = [];
-    for (const t of tl) {
-      const code = t.strTeam ? codeFromName(t.strTeam) : null;
-      const minute = parseInt(t.intTime) || 0;
-      const kind = String(t.strTimeline ?? "").toLowerCase();
-      const detail = String(t.strTimelineDetail ?? "").toLowerCase();
-      if (kind === "goal") {
-        parsed.push({ type: "goal", player: t.strPlayer ?? "", assist: t.strAssist || null, code, minute, penalty: detail.includes("pen"), ownGoal: detail.includes("own") });
-      } else if (kind === "card") {
-        parsed.push({ type: detail.includes("red") ? "red" : "yellow", player: t.strPlayer ?? "", assist: null, code, minute, penalty: false, ownGoal: false });
-      }
+    for (const e of events) {
+      const status = e.strStatus ?? e.strProgress ?? "";
+      if (!FINISHED.has(status)) continue;
+      const id = String(e.idEvent);
+      if (cached.has(id)) continue; // fetch-once
+
+      let tl: any[] = [];
+      try {
+        const r = await fetch(tsdb(`lookuptimeline.php?id=${id}`));
+        tl = (await r.json())?.timeline ?? [];
+      } catch { /* keep score-only */ }
+
+      await sql`INSERT INTO match_cache (event_id, home_code, away_code, home_score, away_score, status, events)
+        VALUES (${id}, ${codeFromName(e.strHomeTeam ?? "")}, ${codeFromName(e.strAwayTeam ?? "")},
+                ${parseInt(e.intHomeScore) || 0}, ${parseInt(e.intAwayScore) || 0}, ${status},
+                ${JSON.stringify(parseTimeline(tl))}::jsonb)
+        ON CONFLICT (event_id) DO NOTHING`;
+      cached.add(id);
     }
-
-    await sql`INSERT INTO match_cache (event_id, home_code, away_code, home_score, away_score, status, events)
-      VALUES (${id}, ${codeFromName(e.strHomeTeam ?? "")}, ${codeFromName(e.strAwayTeam ?? "")},
-              ${parseInt(e.intHomeScore) || 0}, ${parseInt(e.intAwayScore) || 0}, ${status},
-              ${JSON.stringify(parsed)}::jsonb)
-      ON CONFLICT (event_id) DO NOTHING`;
   }
 }
 
