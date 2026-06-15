@@ -40,7 +40,8 @@ export default function LivePage() {
   const upcoming = matches
     .filter((m) => (m.status === "SCHEDULED" || m.status === "TIMED") && dayKey(m.utcDate) !== new Date().toDateString())
     .slice(0, 6);
-  const finished = matches.filter((m) => m.status === "FINISHED").slice(-5).reverse();
+  const allFinished = matches.filter((m) => m.status === "FINISHED").reverse();
+  const finished = allFinished.slice(0, 5);
 
   const playerMatch = (nation: string) =>
     matches.find(
@@ -172,8 +173,16 @@ export default function LivePage() {
       {/* Recent results */}
       {finished.length > 0 && (
         <div className="bg-slate-900 rounded-2xl p-4 border border-slate-800">
-          <p className="text-slate-400 text-xs font-semibold uppercase mb-3">Recent Results</p>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-slate-400 text-xs font-semibold uppercase">Recent Results</p>
+            <span className="text-slate-500 text-xs">{allFinished.length} played</span>
+          </div>
           <div className="space-y-2">{finished.map((m) => <MatchRow key={m.id} m={m} />)}</div>
+          {allFinished.length > 5 && (
+            <Link href="/live/results" className="mt-3 flex items-center justify-center gap-1 bg-slate-800 hover:bg-slate-700 text-emerald-400 font-semibold text-sm py-2.5 rounded-xl transition-all">
+              View all {allFinished.length} results <ChevronRight size={14} />
+            </Link>
+          )}
         </div>
       )}
 
