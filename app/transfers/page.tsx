@@ -8,12 +8,13 @@ import { nationOf, POSITION_QUOTA } from "@/lib/nations";
 import Link from "next/link";
 
 export default function TransfersPage() {
-  const { squad, freeTransfersRemaining, transfers, addPlayer, removePlayer } = useFantasyStore();
+  const { squad, freeTransfersRemaining, transfers, addPlayer, removePlayer, setSquad, addTransfer, setFreeTransfers } = useFantasyStore();
   const [players, setPlayers] = useState<Player[]>([]);
   const [search, setSearch] = useState("");
   const [posFilter, setPosFilter] = useState("ALL");
   const [selectedOut, setSelectedOut] = useState<number | null>(null);
   const [buildError, setBuildError] = useState("");
+  const [transferError, setTransferError] = useState("");
 
   useEffect(() => {
     fetch("/players.json").then(r => r.json()).then(setPlayers);
@@ -22,12 +23,31 @@ export default function TransfersPage() {
   const currentRound = ROUNDS[1];
   const squadCost = squad.reduce((s, p) => s + p.price, 0);
   const remainingBudget = 100 - squadCost;
+  const outPlayer = squad.find(s => s.id === selectedOut);
 
+  // Transfer mode: pool limited to OUT player's position
   const filtered = players.filter(p =>
     p.status === "playing" &&
-    (posFilter === "ALL" || p.position === posFilter) &&
+    !squad.some(s => s.id === p.id) &&
+    (squad.length < 15 ? (posFilter === "ALL" || p.position === posFilter) : p.position === outPlayer?.position) &&
     ((p.knownName || `${p.firstName} ${p.lastName}`).toLowerCase().includes(search.toLowerCase()))
   ).slice(0, 30);
+
+  const doTransfer = (inP: Player) => {
+    if (!outPlayer) return;
+    if (squad.some(s => s.id === inP.id)) { setTransferError("Player already in squad"); return; }
+    const n = nationOf(inP.squadId);
+    const natCount = squad.filter(s => s.nation === n.code && s.id !== outPlayer.id).length;
+    if (natCount >= 3) { setTransferError(`Max 3 players per nation (${n.code})`); return; }
+    const inSp: SquadPlayer = {
+      ...inP, nation: n.code, flag: n.flag,
+      isStarting: outPlayer.isStarting, isCaptain: outPlayer.isCaptain, isViceCaptain: outPlayer.isViceCaptain,
+    };
+    setSquad(squad.map(s => s.id === outPlayer.id ? inSp : s));
+    addTransfer({ out: outPlayer, in: inP, round: currentRound.name, date: new Date().toISOString() });
+    setFreeTransfers(Math.max(0, freeTransfersRemaining - 1));
+    setSelectedOut(null); setSearch(""); setTransferError("");
+  };
 
   const handleAdd = (p: Player) => {
     const n = nationOf(p.squadId);
@@ -205,10 +225,10 @@ export default function TransfersPage() {
               {["ALL","GK","DEF","MID","FWD"].map(p => <option key={p}>{p}</option>)}
             </select>
           </div>
+          {transferError && <p className="text-red-400 text-sm mb-2">⚠️ {transferError}</p>}
           <div className="space-y-2 max-h-64 overflow-y-auto">
             {filtered.map(p => {
               const name = p.knownName || `${p.firstName} ${p.lastName}`;
-              const outPlayer = squad.find(s => s.id === selectedOut);
               const budgetAfter = remainingBudget + (outPlayer?.price || 0) - p.price;
               const canAfford = budgetAfter >= 0;
               return (
@@ -219,11 +239,11 @@ export default function TransfersPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-emerald-400 text-sm font-bold">${p.price}M</span>
-                    {canAfford && (
-                      <button className="bg-emerald-500/20 text-emerald-400 text-xs px-2 py-1 rounded-lg font-bold">
-                        <ArrowRightLeft size={12} />
+                    {canAfford ? (
+                      <button onClick={() => doTransfer(p)} className="bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-400 text-xs px-2 py-1 rounded-lg font-bold flex items-center gap-1">
+                        <ArrowRightLeft size={12} /> IN
                       </button>
-                    )}
+                    ) : <span className="text-red-400 text-[10px]">over budget</span>}
                   </div>
                 </div>
               );
