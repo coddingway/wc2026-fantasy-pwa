@@ -25,6 +25,7 @@ export const INITIAL_FANTASY_STATE = {
   teamName: "My Team",
   notifications: true,
   darkMode: true,
+  challengeBest: 0,
   cloudLoaded: false, // true once cloud state has been fetched this session
 };
 
@@ -81,6 +82,8 @@ interface FantasyStore {
   setTeamName: (name: string) => void;
   cloudLoaded: boolean;
   setCloudLoaded: (v: boolean) => void;
+  challengeBest: number;
+  setChallengeBest: (n: number) => void;
   notifications: boolean;
   toggleNotifications: () => void;
   darkMode: boolean;
@@ -181,6 +184,8 @@ export const useFantasyStore = create<FantasyStore>()(
       setTeamName: (teamName) => set({ teamName }),
       cloudLoaded: false,
       setCloudLoaded: (cloudLoaded) => set({ cloudLoaded }),
+      challengeBest: 0,
+      setChallengeBest: (challengeBest) => set({ challengeBest }),
       notifications: true,
       toggleNotifications: () => set((s) => ({ notifications: !s.notifications })),
       darkMode: true,

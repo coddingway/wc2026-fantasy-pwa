@@ -29,6 +29,7 @@ const QUICK_LINKS = [
   { href: "/leagues",     icon: "🏆", label: "Leagues",      desc: "Join & create" },
   { href: "/tools",       icon: "🔧", label: "Power Tools",  desc: "Full DB" },
   { href: "/education",   icon: "🎓", label: "Learn",        desc: "Fantasy school" },
+  { href: "/challenge",   icon: "🥅", label: "Challenge",    desc: "Penalty game" },
   { href: "/predictions", icon: "🎯", label: "Predict",      desc: "Score games" },
   { href: "/badges",      icon: "🏅", label: "Badges",       desc: "Achievements" },
   { href: "/content",     icon: "📸", label: "Content",      desc: "Share & create" },

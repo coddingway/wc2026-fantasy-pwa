@@ -10,6 +10,7 @@ const MORE_SECTIONS = [
       { href: "/notifications", icon: Bell, label: "Notifications", desc: "Transfer window alerts" },
       { href: "/leagues", icon: Globe, label: "All Leagues", desc: "Public & private leagues" },
       { href: "/tools", icon: Zap, label: "Player Database", desc: "Full 1,481 player list" },
+      { href: "/challenge", icon: Zap, label: "Penalty Challenge", desc: "Shootout game + leaderboard" },
     ]
   },
   {
