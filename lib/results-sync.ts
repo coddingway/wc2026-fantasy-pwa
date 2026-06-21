@@ -119,3 +119,12 @@ export async function getPlayerAggregates(): Promise<PlayerAgg[]> {
   }
   return [...map.values()];
 }
+
+export interface MatchEvents { homeCode: string | null; awayCode: string | null; events: CachedEvent[]; }
+
+export async function getMatchEvents(): Promise<MatchEvents[]> {
+  if (!sql) return [];
+  await ensureSchema();
+  const rows = await sql`SELECT home_code, away_code, events FROM match_cache`;
+  return rows.map((r) => ({ homeCode: r.home_code, awayCode: r.away_code, events: (r.events as CachedEvent[]) ?? [] }));
+}
