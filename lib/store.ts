@@ -13,6 +13,7 @@ export const INITIAL_FANTASY_STATE = {
   totalPoints: 0,
   roundPoints: {} as Record<string, number>,
   playerPoints: {} as Record<number, number>,
+  playerBreakdown: {} as Record<number, Record<string, number>>, // ponytail: transient, recomputed each load, not cloud-synced
   transfers: [] as Transfer[],
   freeTransfersRemaining: 2,
   boosters: BOOSTERS.map((b) => ({ ...b, used: false })),
@@ -47,8 +48,9 @@ interface FantasyStore {
   totalPoints: number;
   roundPoints: Record<string, number>;
   playerPoints: Record<number, number>;
+  playerBreakdown: Record<number, Record<string, number>>;
   addRoundPoints: (round: string, pts: number) => void;
-  setComputedPoints: (total: number, byRound: Record<string, number>, perPlayer: Record<number, number>) => void;
+  setComputedPoints: (total: number, byRound: Record<string, number>, perPlayer: Record<number, number>, breakdown: Record<number, Record<string, number>>) => void;
 
   // Transfers
   transfers: Transfer[];
@@ -139,13 +141,14 @@ export const useFantasyStore = create<FantasyStore>()(
       totalPoints: 0,
       roundPoints: {},
       playerPoints: {},
+      playerBreakdown: {},
       addRoundPoints: (round, pts) =>
         set((s) => ({
           totalPoints: s.totalPoints + pts,
           roundPoints: { ...s.roundPoints, [round]: pts },
         })),
-      setComputedPoints: (totalPoints, roundPoints, playerPoints) =>
-        set({ totalPoints, roundPoints, playerPoints }),
+      setComputedPoints: (totalPoints, roundPoints, playerPoints, playerBreakdown) =>
+        set({ totalPoints, roundPoints, playerPoints, playerBreakdown }),
 
       transfers: [],
       addTransfer: (t) => set((s) => ({ transfers: [...s.transfers, t] })),

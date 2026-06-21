@@ -25,10 +25,12 @@ export function usePointsSync() {
         setInfo({ configured: d.configured !== false, finishedCount: d.finishedCount ?? 0 });
         if (d.configured !== false) {
           const perPlayer: Record<number, number> = {};
+          const breakdown: Record<number, Record<string, number>> = {};
           for (const [id, b] of Object.entries(d.perPlayer ?? {})) {
             perPlayer[Number(id)] = (b as { total: number }).total;
+            breakdown[Number(id)] = b as Record<string, number>;
           }
-          setComputedPoints(d.total ?? 0, d.byRound ?? {}, perPlayer);
+          setComputedPoints(d.total ?? 0, d.byRound ?? {}, perPlayer, breakdown);
         }
       })
       .catch(() => {})

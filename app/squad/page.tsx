@@ -12,7 +12,8 @@ const FORMATION_ROWS = {
 };
 
 export default function SquadPage() {
-  const { squad, playerPoints, totalPoints, setCaptain, setViceCaptain, swapStartingBench } = useFantasyStore();
+  const { squad, playerPoints, playerBreakdown, totalPoints, setCaptain, setViceCaptain, swapStartingBench } = useFantasyStore();
+  const BD_LABEL: Record<string, string> = { appearance: "Appearance", goals: "Goals", assists: "Assists", cleanSheet: "Clean sheet", conceded: "Goals conceded", cards: "Cards", ownGoals: "Own goals" };
   usePointsSync();
   const [selected, setSelected] = useState<number | null>(null);
   const starters = squad.filter((p) => p.isStarting);
@@ -51,14 +52,38 @@ export default function SquadPage() {
         player.position === "MID" ? "bg-green-500/20 text-green-400" :
         "bg-red-500/20 text-red-400"}`}>{player.position}</span>
 
-      {selected === player.id && (
-        <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 bg-slate-800 border border-slate-600 rounded-xl p-2 z-50 flex gap-1 min-w-max">
-          <button onClick={(e) => { e.stopPropagation(); setCaptain(player.id); setSelected(null); }}
-            className="bg-yellow-500/20 text-yellow-400 text-[9px] px-2 py-1 rounded-lg font-bold">© Cap</button>
-          <button onClick={(e) => { e.stopPropagation(); setViceCaptain(player.id); setSelected(null); }}
-            className="bg-slate-600 text-slate-300 text-[9px] px-2 py-1 rounded-lg font-bold">VC</button>
-        </div>
-      )}
+      {selected === player.id && (() => {
+        const bd = playerBreakdown[player.id] ?? {};
+        const rows = Object.keys(BD_LABEL).filter((k) => bd[k]);
+        return (
+          <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 bg-slate-800 border border-slate-600 rounded-xl p-3 z-50 min-w-[170px] text-left" onClick={(e) => e.stopPropagation()}>
+            <p className="text-white text-xs font-bold mb-1">{player.knownName || player.lastName}</p>
+            {rows.length === 0 ? (
+              <p className="text-slate-400 text-[10px] mb-2">No points yet — {player.nation} not played, or no contributions.</p>
+            ) : (
+              <div className="space-y-0.5 mb-2">
+                {rows.map((k) => (
+                  <div key={k} className="flex justify-between gap-3 text-[10px]">
+                    <span className="text-slate-400">{BD_LABEL[k]}</span>
+                    <span className={(bd[k] as number) >= 0 ? "text-emerald-400" : "text-red-400"}>{(bd[k] as number) >= 0 ? "+" : ""}{bd[k]}</span>
+                  </div>
+                ))}
+                {bd.captain ? <p className="text-yellow-400 text-[9px] text-right">× 2 captain</p> : null}
+                <div className="flex justify-between gap-3 text-[11px] font-bold border-t border-slate-600 pt-0.5">
+                  <span className="text-white">Total</span>
+                  <span className="text-emerald-400">{playerPoints[player.id] ?? 0}</span>
+                </div>
+              </div>
+            )}
+            <div className="flex gap-1">
+              <button onClick={(e) => { e.stopPropagation(); setCaptain(player.id); setSelected(null); }}
+                className="bg-yellow-500/20 text-yellow-400 text-[9px] px-2 py-1 rounded-lg font-bold flex-1">© Cap</button>
+              <button onClick={(e) => { e.stopPropagation(); setViceCaptain(player.id); setSelected(null); }}
+                className="bg-slate-600 text-slate-300 text-[9px] px-2 py-1 rounded-lg font-bold flex-1">VC</button>
+            </div>
+          </div>
+        );
+      })()}
     </button>
   );
 
