@@ -1,14 +1,14 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Users, RefreshCw, BarChart2, Zap, MoreHorizontal } from "lucide-react";
+import { Home, Users, RefreshCw, Target, Zap, MoreHorizontal } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 
 const nav = [
   { href: "/", icon: Home, label: "Home" },
   { href: "/squad", icon: Users, label: "Squad" },
   { href: "/transfers", icon: RefreshCw, label: "Transfers" },
-  { href: "/analytics", icon: BarChart2, label: "Stats" },
+  { href: "/challenge", icon: Target, label: "Challenge" },
   { href: "/live", icon: Zap, label: "Live" },
   { href: "/more", icon: MoreHorizontal, label: "More" },
 ];
