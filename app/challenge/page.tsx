@@ -77,7 +77,9 @@ export default function ChallengePage() {
     const saved = Math.abs(target - keeperCenter) < KW / 2 + 0.03;
     setPhase("shooting");
     setBall({ x: target, up: true });                // ball flies (CSS transition)
-    setKeeperDive(target);                            // keeper lunges toward ball
+    // keeper reaches ball only on save; on goal it dives the wrong way
+    const diveTo = saved ? target : (target < 0.5 ? 0.8 : 0.2);
+    setKeeperDive(diveTo);
 
     setTimeout(() => {
       if (saved) {
