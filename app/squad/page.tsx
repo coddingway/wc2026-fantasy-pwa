@@ -27,9 +27,9 @@ export default function SquadPage() {
   const fwds = starters.filter((p) => p.position === "FWD");
 
   const PlayerCard = ({ player }: { player: typeof squad[0] }) => (
-    <button
+    <div role="button" tabIndex={0}
       onClick={() => setSelected(selected === player.id ? null : player.id)}
-      className={`relative flex flex-col items-center gap-1 p-2 rounded-xl transition-all ${selected === player.id ? "ring-2 ring-emerald-400 bg-emerald-500/10" : "hover:bg-slate-800"}`}
+      className={`relative flex flex-col items-center gap-1 p-2 rounded-xl transition-all cursor-pointer ${selected === player.id ? "ring-2 ring-emerald-400 bg-emerald-500/10" : "hover:bg-slate-800"}`}
     >
       <div className="relative">
         <div className="w-12 h-12 rounded-full bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center text-xl border-2 border-slate-600">
@@ -95,7 +95,7 @@ export default function SquadPage() {
           </div>
         );
       })()}
-    </button>
+    </div>
   );
 
   if (squad.length === 0) {
